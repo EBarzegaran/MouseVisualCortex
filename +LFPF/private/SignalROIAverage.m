@@ -14,7 +14,9 @@ for roi = 1:numel(ROIs)
         end
     end
     Signal_Averaged.(ROIs{roi}).SM = mean(cat(3,Temp{:}),3);
+    Signal_Averaged.(ROIs{roi}).STD = std(cat(3,Temp{:}),[],3);
     Signal_Averaged.(ROIs{roi}).Num = ROI_counts(roi);
+    clear Temp;
 end
 %% plot the results
 Colors = brewermap(6,'Spectral');
@@ -30,8 +32,17 @@ for roi = 1:numel(ROIs)
     end
     hold on;
     Signal = Signal_Averaged.(ROIs{roi}).SM;
-    Offset = max(Signal(:))*.6;
-    for l = 1:6
+    SignalErr = Signal_Averaged.(ROIs{roi}).STD;
+    Offset = max(Signal(:))*1;
+    
+    for l = 1:size(Signal,1)
+        X = Signal_Averaged.(ROIs{roi}).Times;
+        Y = Signal(l,:)-Offset*l;
+        Err = SignalErr(l,:)/sqrt(Signal_Averaged.(ROIs{roi}).Num);
+        fill([X X(end:-1:1)],[Y+Err Y(end:-1:1)-Err(end:-1:1)],Colors(l,:),'facealpha',.3,'edgecolor','none');
+    end
+    
+    for l = 1:size(Signal,1)
         plot(Signal_Averaged.(ROIs{roi}).Times,Signal(l,:)-Offset*l,'linewidth',1.5,'color',Colors(l,:));
     end
     xlim([-.1 1])
@@ -42,6 +53,7 @@ for roi = 1:numel(ROIs)
         xlabel('Time(s)')
     end
     vline(0.0,'k--')
+    vline(.044,'k--')
 end
 
 set(FIG,'color','w','unit','inch','position',[0 0 15 15])

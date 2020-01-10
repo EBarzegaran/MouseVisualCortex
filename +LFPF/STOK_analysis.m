@@ -10,7 +10,7 @@ opt = ParseArgs(varargin,   ... % parse the inputs and indicate default variable
         'TimeWin'           ,[],...
         'Sessions_subset'   ,[],...
         'Freqs'             ,1:80,...
-        'ROIs'              ,{'VISp','VISl','VISli','VISrl','VISal','VISpm','VISam','VISmma','LGv','LP','LGd'}...
+        'ROIs'              ,{'VISp','VISl','VISli','VISrl','VISal','VISpm','VISam','VISmma','LP','LGd'}...
         );
 
 %%
@@ -50,7 +50,7 @@ for S = 1:numel(Sessions_ID)
                 error('Indicate the Laminar layers first...')
         end
         ROIsNames = {};
-        for p = 1:numel(Probes_ID)
+        for p =1:numel(Probes_ID)
             disp(['optimizing parameters for probe #' Probes_ID{p}]);
             disp('This may take a few minutes...')
             %-------------------------Read Data----------------------------
@@ -69,10 +69,7 @@ for S = 1:numel(Sessions_ID)
             % use the allen atlas to label the layers and ROIs
             [Summary,av,st] = GetAllenLabels(probeinfo.Coords,av,st);
             % segment the LFP data according to the ROIs and sub(laminar) labels
-            session.(['S' Sessions_ID{S}]) = extractROIs(Data,probeinfo,LayerInfo.(['P' Probes_ID{p}]),Summary,opt.ROIs,session.(['S' Sessions_ID{S}]));
-
-            %session.(['S' Sessions_ID{S}]).(Data.ROI) = Data;
-            %ROIsNames{p} = Data.ROI;
+            session.(['S' Sessions_ID{S}]) = extractROIs(Data,probeinfo,LayerInfo.Layers,LayerInfo.(['P' Probes_ID{p}]),Summary,opt.ROIs,session.(['S' Sessions_ID{S}]),fullfile(Savepath,Sessions_ID{S}));
             
             
             %--------------------plot teh bipolar maps---------------------
@@ -110,15 +107,16 @@ for S = 1:numel(Sessions_ID)
 %     end
     
     %% Estimate STOK over all ROIs
-    [Temp.PDC,Temp.f,Temp.Times,Temp.ROIs] = LFPF.STOKEstimate_All(session.(['S' Sessions_ID{S}]),opt.MOrd, opt.ff,opt.PDCMethod,opt.ROIs,opt.Freqs);
-    StokALL.(['S' Sessions_ID{S}]) = Temp;
-    
+    tic
+     [Temp.PDC,Temp.f,Temp.Times,Temp.ROIs] = LFPF.STOKEstimate_All(session.(['S' Sessions_ID{S}]),opt.MOrd, opt.ff,opt.PDCMethod,opt.ROIs,opt.Freqs);
+     StokALL.(['S' Sessions_ID{S}]) = Temp;
+    toc
     
 end
     
 %% plot the average
 % STOK_Averaged = STOKROIAverage(Stok,[],savefig,Savepath,opt.PDCMethod);
-% SignalROIAverage(session,opt.ROIs,savefig,Savepath);    
+SignalROIAverage(session,opt.ROIs,savefig,Savepath);    
 
 %% average the whole visual cortex networks
 savefig = true;

@@ -15,8 +15,11 @@ ROI_counts = ROI_counts(ib(I));
 %% Make the grand average matrix with all ROIS/Full model
 Dims = size(STOKAll.(Sessions_ID{1}).PDC);
 %
-STOK_AV = zeros(6*numel(ROIs),6*numel(ROIs),Dims(3),Dims(4));
-ROI_num = zeros(6*numel(ROIs),6*numel(ROIs));
+ROIsizes = contains(ROIs_Select,'VIS')*3+3;
+ROIindices = [0 cumsum(ROIsizes)];
+%
+STOK_AV = zeros(sum(ROIsizes),sum(ROIsizes),Dims(3),Dims(4));
+ROI_num = zeros(sum(ROIsizes),sum(ROIsizes));
 for S = 1:numel(Sessions_ID)
    PDC = STOKAll.(Sessions_ID{S}).PDC;
    rois = STOKAll.(Sessions_ID{S}).ROIs;
@@ -25,7 +28,9 @@ for S = 1:numel(Sessions_ID)
    rois = C(I);
    Labels = ia(I);
    
-   indices = arrayfun(@(x) [(x-1)*6+1:x*6],Labels,'uni',false);
+   %indices = arrayfun(@(x) [(x-1)*6+1:x*6],Labels,'uni',false);
+   %indices = cat(2,indices{:});
+   indices  =  arrayfun(@(x) ROIindices(x)+1:ROIindices(x+1),Labels,'uni',false);
    indices = cat(2,indices{:});
    
    STOK_AV(indices,indices,:,:) = STOK_AV(indices,indices,:,:) + PDC;
@@ -40,9 +45,9 @@ if saveresults
     STOK_avg.PDC    = STOK_AV;
     STOK_avg.Time   = STOKAll.(Sessions_ID{1}).Times;
     STOK_avg.Freq   = STOKAll.(Sessions_ID{1}).f;
-    STOK_avg.ROIs   = ROIs;
+    STOK_avg.ROIs   = ROIs_Select;
     STOK_avg.ROIs_count = ROI_counts;
-    labels = cellfun(@(y) arrayfun(@(x) [y '_L' num2str(x)],1:6,'uni',false),ROIs,'uni',false);
+    labels = arrayfun(@(y) arrayfun(@(x) [ROIs_Select{y} '_L' num2str(x)],1:ROIsizes(y),'uni',false),1:numel(ROIs_Select),'uni',false);
     labels = cat(2,labels{:});
     STOK_avg.labels  = labels;
     save(fullfile(Path,'Fullmodel',['STOK_Average_' PDCMethod]),'STOK_avg');
@@ -62,7 +67,7 @@ A{3}      = (A{2}-A{1})./A{1};% percent change %squeeze(mean(mean(STOK_AVN(:,:,:
 Titles = {'Prestimulus','Poststimulus','+ % Change','- %change'};
 FIG = figure;
 set(gcf,'unit','inch','color','w','position',[0 0 25 5.5])
-
+ROItick = (ROIindices(1:end-1)+ROIindices(2:end))/2;
 for i = 1:3
     subplot(1,3,i),
     imagesc(A{i});
@@ -81,10 +86,11 @@ for i = 1:3
     end
     hold on;
 
-    set(gca,'xtick',3:6:numel(ROIs)*6,'xticklabel',ROIs,'ytick',3:6:numel(ROIs)*6,'yticklabel',ROIs)
-    for r = 0:numel(ROIs)-1
-        vline(r*6+.5,'w-')
-        hline(r*6+.5,'w-')
+    set(gca,'xtick',ROItick,'xticklabel',ROIs_Select,'ytick',ROItick,'yticklabel',ROIs_Select)
+    xtickangle(45)
+    for r = 2:numel(ROIs_Select)
+        vline(ROIindices(r)+.5,'w-')
+        hline(ROIindices(r)+.5,'w-')
     end
     colorbar
     title(Titles{i})
@@ -96,7 +102,7 @@ end
 
 %% plot the graphs: within ROI, laminar connectivity
 
-LLabels = arrayfun(@(x) [ num2str(x)],1:6,'uni',false);
+%LLabels = arrayfun(@(x) [ num2str(x)],1:6,'uni',false);
 Colors  = brewermap(6,'Spectral');
 
 AN = cellfun(@(x) x./max(x(:)),A,'uni',false);
@@ -104,24 +110,25 @@ AN = cellfun(@(x) x./max(x(:)),A,'uni',false);
 
 FIG = figure;
 set(gcf,'unit','inch','color','w','position',[1 1 numel(AN)*2+2 25])
-for roi = 1:numel(ROIs)
-    ind = (roi-1)*6+1:roi*6;
+for roi = 1:numel(ROIs_Select)
+    ind = ROIindices(roi)+1:ROIindices(roi+1);
     for i = 1:numel(AN)
         %-----------------------------
-        subplot(numel(ROIs),numel(AN),(roi-1)*numel(AN)+i);
+        subplot(numel(ROIs_Select),numel(AN),(roi-1)*numel(AN)+i);
         a = AN{i}(ind,ind);
         a(a<0)=0;
         a = a./max(a(:));
+        LLabels = arrayfun(@(x) [ num2str(x)],1:ROIsizes(roi),'uni',false);
         plot_graph(a,LLabels,Colors,'down',.6)
         %------------------------------
         if roi ==1
             title(Titles{i});
         end
         if i==1
-            ylabel(ROIs{roi});
+            ylabel(ROIs_Select{roi});
         end
         
-        if roi ==numel(ROIs)
+        if roi ==numel(ROIs_Select)
             xlabel('Upward     Downward')
         end
     end
@@ -135,19 +142,19 @@ end
 %% plot network structure
 FIG = figure;
 set(gcf,'unit','inch','color','w','position',[1 1 15 5])
-Colors  = brewermap(8,'Spectral');
+Colors  = brewermap(11,'Spectral');
 
 for i = 1:3
     subplot(1,3,i),
-    for r1 = 1:numel(ROIs)
-        for r2 = 1:numel(ROIs)
-            a(r1,r2) = max(max(AN{i}((r1-1)*6+1:r1*6,(r2-1)*6+1:r2*6)));
+    for r1 = 1:numel(ROIs_Select)
+        for r2 = 1:numel(ROIs_Select)
+            a(r1,r2) = max(max(AN{i}(ROIindices(r1)+1:ROIindices(r1+1),ROIindices(r2)+1:ROIindices(r2+1))));
         end
     end
 %     a = squeeze(mean(mean(reshape(A{i},6,numel(ROIs),6,numel(ROIs)),1),3));
     a(a<0)=0;
     a = a./max(a(:));
-    plot_graph(a,ROIs,Colors,'down',.5)
+    plot_graph(a,ROIs_Select,Colors,'down',.7)
     title(Titles{i});
     xlabel('Feedback         Feedforward')
 end
@@ -158,14 +165,14 @@ end
 %%
 Freq = STOKAll.(Sessions_ID{1}).f;
 
-for roi = 1:numel(ROIs)
-    ind = (roi-1)*6+1:roi*6;
+for roi = 1:numel(ROIs_Select)
+    ind = ROIindices(roi)+1:ROIindices(roi+1);
    
 
     FIG = dynet_connplot(STOK_AVN(ind,ind,:,Time>-.1 & Time<.2),Time(Time>-.1 & Time<.2),Freq);
     set(FIG,'color','w','unit','inch','position',[0 0 25 15]);
     if savefig
-        export_fig(FIG,fullfile(Path,'Fullmodel',['STOK_individual_Transient_' ROIs{roi} '_' PDCMethod]),'-pdf');
+        export_fig(FIG,fullfile(Path,'Fullmodel',['STOK_individual_Transient_' ROIs_Select{roi} '_' PDCMethod]),'-pdf');
     end
     close all
 end
