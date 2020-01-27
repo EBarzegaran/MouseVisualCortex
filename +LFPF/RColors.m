@@ -27,9 +27,9 @@ classdef RColors
               % assign proper colors to ROIs
               switch ROIList{i}
                   case 'VISp'
-                      Color = [0.33,0.15,0.53];
+                      Color = [0.43,0.25,0.63];
                   case 'VISl'
-                      Color = [0.02,0.19,0.38];
+                      Color = [0.03,0.29,0.48];
                   case 'VISrl'
                       Color = [0.26,0.58,0.76];
                   case 'VISli'

@@ -5,7 +5,7 @@ ROIs        = session_Data.ROIs;
 
 %Orders = {'VISp','VISl','VISli','VISrl','VISal','VISpm','VISam','VISmma'};
 
-[C,ia,ib] = intersect(Orders,ROIs);
+[C,ia,ib]  = intersect(Orders,ROIs);
 [~,I] = sort(ia);
 ROIs = C(I);
 
@@ -19,8 +19,9 @@ end
 
 Y           = cat(2,Y{:});
 % detrending and normalizing
-% Y = Y - mean(mean(Y,1),3);
 % Y = Y./mean(mean(Y,1).^2,3);
+% Y = Y - mean(mean(Y,1),3);
+
 
 %% APPLY STOK
 % final estimation of FC
