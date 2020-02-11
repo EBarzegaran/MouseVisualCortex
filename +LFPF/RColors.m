@@ -31,7 +31,7 @@ classdef RColors
                   case 'VISl'
                       Color = [0.03,0.29,0.48];
                   case 'VISrl'
-                      Color = [0.26,0.58,0.76];
+                      Color = [0.26,0.68,0.76];
                   case 'VISli'
                       Color = [0 .8 .8];
                   case 'VISal'
@@ -53,7 +53,8 @@ classdef RColors
                       
               end
               % define subcolors
-              Offset    = repmat(-.15:.05:.1,[3 1])';
+              %Offset    = repmat(-.15:.05:.1,[3 1])';
+              Offset    = repmat(-.25:.1:.25,[3 1])';
               SubColors = repmat(Color,[6 1])+Offset;
               SubColors = max(min(SubColors,1),0);
               %prepare output

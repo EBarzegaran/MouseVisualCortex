@@ -2,19 +2,20 @@
 clear; clc;
 
 addpath(genpath(fileparts(mfilename('fullpath'))));
-load('/Users/elhamb/switchdrive/EB/AllenBrainData/STOK_Average_iPDC_ff.98_MOrd10_Thalamus.mat');
-%load('/Users/elhamb/Documents/Data/AllenBrainObserver/preliminary_results/Averaged/Fullmodel/STOK_Average_iPDC.mat');
+%load('/Users/elhamb/switchdrive/EB/AllenBrainData/STOK_Average_iPDC_ff.98_MOrd10_Thalamus.mat');
+load('/Users/elhamb/Documents/Data/AllenBrainObserver/preliminary_results/Averaged/Fullmodel/STOK_Average_iPDC.mat');
 SavePath = '/Users/elhamb/Documents/Data/AllenBrainObserver/preliminary_results/Averaged/Fullmodel';
 COBJ = LFPF.RColors();
-Colors = COBJ.MatrixColors(STOK_avg.ROIs([1:7]));
-
+Colors = COBJ.MatrixColors(STOK_avg.ROIs);
+load ROInames;
+NROIs = numel(STOK_avg.ROIs);
 %% plot each ROI separately
 Time    = STOK_avg.Time;
 Freq    = STOK_avg.Freq;
 PDC     = STOK_avg.PDC;
 PDC     = (PDC - mean(PDC(:,:,:,Time>-.3 & Time<0),4))./mean(PDC(:,:,:,Time>-.3 & Time<0),4);
 
-for roi = 1:8
+for roi = 1:NROIs
     ind = [(roi-1)*6+1:roi*6];
     FIG = dynet_connplot(PDC(ind,ind,:,Time>-.2 & Time<1),Time(Time>-.2 & Time<1),Freq,cellfun(@(x) strrep(x,'_','-'),STOK_avg.labels(ind),'uni',false),[],[],[],[],STOK_avg.ROIs{roi});
     set(FIG,'unit','inch','position',[0,0,20,12],'color','w')
@@ -33,14 +34,14 @@ for i = 1:size(PDC,1)
     PDC(i,i,:,:)=0;
 end
 
-PDC= PDC(1:42,1:42,:,:);
+%PDC= PDC(1:42,1:42,:,:);
 
 Cnd_var = {'PDCInter','PDCIntra','PDCInterIntra','PDCInterIntraPercent','PDCInterIntraPercent_prestimNorm'};
 
 M = max(PDC(:))/5;
 for Cnd =5:5
     FIG1 = figure(1);
-    for roi = 1:7
+    for roi = 1:NROIs
         figure(1);
         ind = [(roi-1)*6+1:roi*6];
         IND = setdiff(1:size(PDC,1),ind);
@@ -62,7 +63,7 @@ for Cnd =5:5
                 %PDCInterIntra = PDCInterIntra - mean(PDCInterIntra(:,:,Time<0 & Time>-.3),3);
                 
         end
-        subplot(7,1,roi),
+        subplot(NROIs,1,roi),
         imagesc(squeeze(mean(PDCInterIntra,1)));
         if Cnd==4
             %caxis([0 1])
@@ -145,7 +146,6 @@ Time    = STOK_avg.Time;
 Freq    = STOK_avg.Freq;
 PDC     = STOK_avg.PDC;
 
-PDC_sub = PDC(1:42,1:42,:,:);
 % Convert to percentage
 PDC_sub     = (PDC_sub - mean(PDC_sub(:,:,:,Time>-.3 & Time<0),4))./mean(PDC_sub(:,:,:,Time>-.3 & Time<0),4);
 
@@ -156,7 +156,7 @@ Cnd_var = {'PDCFF','PDCFB','PDCFFFB','PDCFFFBpercent','PDCFFFBpercent_PrestimNor
 
 for Cnd = 1:2
     
-    for roi = 1:7
+    for roi = 1:NROIs
         FIG = figure(1);
         indO        = (roi-1)*6+1:roi*6; % indices for original ROI
         indFF       = setdiff(roi*6+1:size(PDC_sub,1),indO); % indices for FF ROI
@@ -269,23 +269,24 @@ Time    = STOK_avg.Time;
 Freq    = STOK_avg.Freq;
 PDC     = STOK_avg.PDC;
 
-PDC         = PDC(1:42,1:42,:,:);
 PDC_perchange    = (PDC - mean(PDC(:,:,:,Time>-.3 & Time<0),4))./mean(PDC(:,:,:,Time>-.3 & Time<0),4);
 
 
-TW = [-.3 0; .05 .09; .1 1];
-TName = {'Prestim','Transient','SteadyState'};
+TW =  [-.3 0; .05 .08; .3 1;.3 1];
+FW = [1 100; 1 100; 30 55; 1 30];
+subtitles = {'Pre-stimulus PDC','%change (50-100 msec)','%change (300-1000 msec,30-100 Hz)','%change (300-1000 msec,1-30 Hz)'};
+clear PDCM;
 
-for roi1 = 1:7
-    for roi2 = 1:7
+for roi1 = 1:NROIs
+    for roi2 = 1:NROIs
         ind1    = (roi1-1)*6+1:roi1*6; % indices for source ROI
         ind2    = (roi2-1)*6+1:roi2*6; % indices for target ROI
         
-        for TC = 1:3
+        for TC = 1:size(TW,1)
             if TC==1
-                PDCM(roi2,roi1,:,TC) = mean(mean(mean(PDC (ind2,ind1,:,Time>TW(TC,1) & Time<TW(TC,2)),1),2),4);
+                PDCM{TC}(roi2,roi1,:) = mean(mean(mean(PDC (ind2,ind1,FW(TC,1):FW(TC,2),Time>TW(TC,1) & Time<TW(TC,2)),1),2),4);
             else
-                PDCM(roi2,roi1,:,TC) = mean(mean(mean(PDC_perchange (ind2,ind1,:,Time>TW(TC,1) & Time<TW(TC,2)),1),2),4);
+                PDCM{TC}(roi2,roi1,:) = mean(mean(mean(PDC_perchange (ind2,ind1,FW(TC,1):FW(TC,2),Time>TW(TC,1) & Time<TW(TC,2)),1),2),4);
 
             end
         end
@@ -296,46 +297,79 @@ end
 %
 close all;
 FIG1 = figure(1);
-FIG2 = figure(2);
-set(FIG1,'unit','inch','position',[2 10 20 5],'color','w');
-set(FIG2,'unit','inch','position',[2 0 15 5],'color','w');
-subtitles = {'Prestim PDC','%change PDC (transient)','%change PDC (Steady)'};
+%FIG2 = figure(2);
+set(FIG1,'unit','inch','position',[2 10 12 5*size(TW,1)],'color','w');
+%set(FIG2,'unit','inch','position',[2 0 15 5],'color','w');
+load Hierarchyscores.mat;
+HS = mean(H(Time<0 & Time>-.3,:));
+LG = (cellfun(@(x) ROI_names.(x),STOK_avg.ROIs,'uni',false));
 
-for Cnd = 1:3
-    figure(1);subplot(1,3,Cnd);
-    Matrix = squeeze(mean(PDCM(:,:,:,Cnd),3));
-    imagesc(Matrix);
-    set(gca,'xtick',1:7,'xticklabels',STOK_avg.ROIs(1:7),'ytick',1:7,'yticklabels',STOK_avg.ROIs(1:7))
+Mcc                         = ones((NROIs));
+Mcc(find(triu(Mcc)))        = -1;
+Mcc(1:length(Mcc)+1:end)    = 0; 
+
+for Cnd = 1:size(TW,1)
+    figure(1);subplot(size(TW,1),2,(Cnd-1)*2+1);
+    Matrix = squeeze(mean(PDCM{Cnd},3));
+    m1 = sum(sum(triu(Matrix.*Mcc*100)))/(NROIs*(NROIs-1)/2);
+    m2 = sum(sum(tril(Matrix.*Mcc*100)))/(NROIs*(NROIs-1)/2);
+    imagesc(Matrix.*Mcc*100);
+    set(gca,'xtick',1:NROIs,'xticklabels',LG,'ytick',1:NROIs,'yticklabels',LG,'fontsize',14)
+    %title(subtitles{Cnd})
+    caxis([-1 1]*100);
+    colormap(jmaColors('coolhot2'))
+    CB = colorbar;
+    CB.TickLabels = {'100','50','0','50','100'};
+    xlabel('Source');ylabel('Target')
     title(subtitles{Cnd})
-    colorbar
-    figure(2);subplot(1,3,Cnd);
+    
+    figure(1);subplot(size(TW,1),2,(Cnd-1)*2+2);
     if Cnd ==1
+        %Matrix = (Matrix-min(Matrix(:)))./(max(Matrix(:))-min(Matrix(:)));
+        Matrix(1:length(Matrix)+1:end)=NaN;
+        Matrix = Matrix - nanmean(Matrix(:));
+        Matrix(Matrix<0)=0;
         Matrix = (Matrix-min(Matrix(:)))./(max(Matrix(:))-min(Matrix(:)));
+        Matrix(1:length(Matrix)+1:end)=1;
+       
+    else
+        %Matrix = Matrix./(max(Matrix(:)));
+        Matrix(1:length(Matrix)+1:end)=NaN;
+        Matrix = Matrix - nanmean(Matrix(:));
+        Matrix(Matrix<0)=0;
+        Matrix = (Matrix-min(Matrix(:)))./(max(Matrix(:))-min(Matrix(:)));
+        Matrix(1:length(Matrix)+1:end)=1;
+        Matrix = Matrix;
     end
-    plot_graph(Matrix,STOK_avg.ROIs(1:7),Colors,'up',0.6);
-    title(subtitles{Cnd})
+    plot_graph(Matrix,LG,Colors,[],0.0,HS);
+    %
+    box off
+    axis off;
+    set(gca,'fontsize',14)
 end
 
-export_fig(FIG1,fullfile(SavePath,'PremResults',['Matrix_PDCs']),'-pdf','-r200');  
-export_fig(FIG2,fullfile(SavePath,'PremResults',['Graph_PDCs']),'-pdf','-r200'); 
+export_fig(FIG1,fullfile(SavePath,'PremResults',['Matrix_graph_PDCs']),'-pdf','-r300');  
+%export_fig(FIG2,fullfile(SavePath,'PremResults',['Graph_PDCs']),'-pdf','-r200'); 
 close all;
 
-%% Hierarchical organization based on input and output
+%% Hierarchical organization based on siegle paper
 
 Time    = STOK_avg.Time;
 Freq    = STOK_avg.Freq;
 PDC     = STOK_avg.PDC;
+LG = (cellfun(@(x) ROI_names.(x),STOK_avg.ROIs,'uni',false));
 % hierarchy scores based on input and output
 %PDCdiff = (permute(PDC,[2 1 3 4])-PDC)./((permute(PDC,[2 1 3 4])+PDC)/2);
 %PDC   = (PDC - mean(PDC(:,:,:,Time>-.3 & Time<0),4))./mean(PDC(:,:,:,Time>-.3 & Time<0),4);
 
 % remove inter connections
-PDC= PDC(1:42,1:42,:,:);
+%PDC= PDC(1:42,1:42,:,:);
+
 % average the scores
 
-for roi1 = 1:7
+for roi1 = 1:NROIs
    ind1 = (roi1-1)*6+1:roi1*6;
-   for roi2 = 1:7
+   for roi2 = 1:NROIs
        if roi2 ~=roi1
            ind2 = (roi2-1)*6+1:roi2*6;
            HscoreMR(roi2,roi1,:,:) = nanmean(nanmean(PDC(ind2,ind1,:,:),1),2);
@@ -343,210 +377,99 @@ for roi1 = 1:7
    end
 end
 %
+%HscoreMR = PDC;
+
 for t = 100:numel(Time)
     M = (nanmean(HscoreMR(:,:,:,t),3));
     %M = M./nansum(M(:));
     [H(t,:),Hcc(t)] = HierarchyExtract(M);
 end 
 
-%
+for f = 1:100
+    f
+    for t = 100:numel(Time)
+        M = squeeze((HscoreMR(:,:,f,t)));
+        %M = M./nansum(M(:));
+        [Hf(f,t,:),Hccf(f,t)] = HierarchyExtract(M);
+    end 
+end
+
 
 FIG = figure;
+set(FIG,'unit','inch','position',[0,0,5,4.5],'color','w')
+CMM = mean(H)'-mean(H);%squeeze(mean(CM(Time>-.3 & Time<0,:,:)));
+imagesc(CMM)
+colormap(jmaColors('coolhot2'))
+set(gca,'xtick',1:NROIs,'xticklabel',LG,'ytick',1:NROIs,'yticklabel',LG,'fontsize',18,'fontweight','bold');
+xlabel('Source');
+ylabel('Target');
+CB = colorbar;
+CP = get(gca,'position');
+caxis([-max(abs(CMM(:))) max(abs(CMM(:)))]);
+set(CB,'position',get(CB,'position')+[0 .4 0.03 -.4]);
+set(gca,'position',CP);
+export_fig(FIG,fullfile(SavePath,'PremResults',['Hierarchy_Score_ROIs_Prestim']),'-pdf'); close; 
+
+%----------------------------Graph style-----------------------------------
+HS = mean(H(Time<0 & Time>-.3,:));
+Edges = mean(mean(HscoreMR(:,:,:,Time<0 & Time>-.3),4),3);
+Edges = Edges ./max(Edges(:));
+FIG = figure;
+set(FIG,'unit','inch','position',[1,1,4,3.5],'color','w')
+plot_graph(Edges.^2,LG,Colors,[],.0,HS);
+axis on;
+box off;
+set(gca,'xtick',[],'ytick',round(HS,2));
+ylabel('Functional Hierachy score');
+set(gca,'fontsize',14)
+export_fig(FIG,fullfile(SavePath,'PremResults',['Hierarchy_Score_ROIs_Prestim_graph']),'-pdf'); close; 
+
+%--------------------------------------------------------------------------
+% OVER TIME
+load ROInames;
+Xticklabels = -.2:.200:1.000;
+Xticks = arrayfun(@(x) find(round(Time,2)==x,1),Xticklabels);
+
+
+HM = (H - mean(H(Time<0 & Time>-.3,:)))./abs(mean(H(Time<0 & Time>-.3,:)))*100;
+FIG = figure;
+set(FIG,'unit','inch','position',[0,0,6.5,6.5],'color','w');
 subplot(2,1,1),
-for roi = 1:7
-    plot(Time(100:end),squeeze(H(100:end,roi)),'Color',Colors(roi,:),'linewidth',1.5);
+for roi = 1:NROIs
+    plot(Time(100:end)*1000,squeeze(HM(100:end,roi)),'Color',Colors(roi,:),'linewidth',1.5);
     hold on
 end
-legend(STOK_avg.ROIs(1:7))
-xlim([-.3 1])
-ylabel('Hierarchy score')
+lg = legend(LG);
+set(lg,'position',get(lg,'position')+[.05 0 0 0])
+xlim([-.1 1]*1000)
+title('ROI Hierarchy Scores % change');
 
-subplot(2,1,2),plot(Time(100:end),Hcc(100:end),'color','k','linewidth',1.5)
-xlim([-.3 1])
-ylabel('Total Hierarchy')
+vline(0,'k--')
+set(gca,'fontsize',14)
+
+subplot(2,1,2),%plot(Time(100:end)*1000,Hcc(100:end),'color','k','linewidth',1.5)
+HccfPC = (Hccf - mean(Hccf(:,Time<0 & Time>-.3),2))./mean(Hccf(:,Time<0 & Time>-.3),2);
+imagesc(HccfPC(:,:)*100); axis xy;
+xlim([find(round(Time,2)==-.1,1) find(round(Time,2)==1,1)])
+ylabel('Frequency (Hz)')
 xlabel('Time (msec)')
-
-set(FIG,'unit','inch','position',[0,0,8,10],'color','w');
-export_fig(FIG,fullfile(SavePath,'PremResults',['Hierarchy_Score_percentChange']),'-pdf'); close; 
-
-
-%% Hierarchical organization based on input and output
-
-Time    = STOK_avg.Time;
-Freq    = STOK_avg.Freq;
-PDC     = STOK_avg.PDC;
-% Convert to percentage
-%PDC     = (PDC - mean(PDC(:,:,:,Time>-.3 & Time<0),4))./mean(PDC(:,:,:,Time>-.3 & Time<0),4);
-
-% hierarchy scores based on input and output
-PDCdiff = (permute(PDC,[2 1 3 4])-PDC)./((permute(PDC,[2 1 3 4])+PDC)/2);
-% remove inter connections
-
-PDCdiff= PDCdiff(1:42,1:42,:,:);
-% average the scores
-
-for roi = 1:7
-    if roi<9
-        ind1 = (roi-1)*6+1:roi*6;
-    else
-        switch roi
-            case 9
-                ind1 = 49:51;
-            case 10
-                ind1 = 52:54;
-        end
-    end
-   ind2 = setdiff(1:size(PDCdiff,1),(roi-1)*6+1:roi*6);
-   HscoreM(roi,:,:) = nanmean(nanmean(PDCdiff(ind2,ind1,:,:),1),2);
-   for roi2 = 1:7
-       ind2 = (roi2-1)*6+1:roi2*6;
-       HscoreMR(roi2,roi,:,:) = nanmean(nanmean(PDCdiff(ind2,ind1,:,:),1),2);
-
-   end
-end
+title('Total Hierarchy Score % change')
+%caxis([.14 .16])
+caxis([-.05 .05]*100)
+set(gca,'xtick',Xticks,'xticklabel',Xticklabels*1000)
+SPP = get(gca,'position');
+CB = colorbar;
+set(gca,'position',SPP);
+set(CB,'position',get(CB,'position')+[-.03 0 0 0])
+%set(get(CB,'title'),'string','% change')
+colormap('jet')
+hold on
+vline(find(round(Time,2)==0,1),'k--')
+set(gca,'fontsize',14)
 
 
-Htotal = arrayfun(@(x) nanmean(nanmean(tril(squeeze(nanmean(PDCdiff(:,:,:,x),3))),1),2),1:size(PDCdiff,4));
-FIG = figure;
-plot(Time,Htotal,'color','k','linewidth',1.5);
-xlim([-.3 1]);
-set(FIG,'unit','inch','position',[0,0,8,5],'color','w');
-export_fig(FIG,fullfile(SavePath,'PremResults',['Total_hierarchy_Score']),'-pdf'); close; 
+export_fig(FIG,fullfile(SavePath,'PremResults',['Hierarchy_Score_PDC']),'-pdf'); close; 
+ROIs = STOK_avg.ROIs;
+save('Hierarchyscores','H','ROIs');
 
 
-%--------------------------------------------------------------------------
-% ROIs relative hierarchy averaged
-ROIName = STOK_avg.ROIs(1:7);
-TW = [-.3 0; .05 .09; .1 1];
-TName = {'Prestim','Transient','SteadyState'};
-for TC = 1:3
-    FIG = figure;
-    HS = nanmean(nanmean(HscoreMR(:,:,:,Time>TW(TC,1) & Time<TW(TC,2)),3),4)';
-    HierarchyExtract(HS);
-    HSroi = nanmean(HS,2);
-    HS(isnan(HS))=0;
-    imagesc(HS)
-    colormap(jmaColors('coolhot'))
-    set(gca,'xtick',1:7,'xticklabel',STOK_avg.ROIs([1:7]),'ytick',1:7,'yticklabel',STOK_avg.ROIs([1:7]));
-    colorbar
-    set(FIG,'unit','inch','position',[0,0,5,4],'color','w')
-    export_fig(FIG,fullfile(SavePath,'PremResults',['Hierarchy_Score_ROIs_' TName{TC}]),'-pdf'); close; 
-
-    % check the best hierarchy
-    Perm = perms(1:length(HS));
-    HSp = arrayfun(@(x) sum(sum(tril(HS(Perm(x,:),Perm(x,:))))),1:size(Perm,1));
-    [~,BestPerm] = max(HSp);
-    BestPerm = Perm(BestPerm,:);
-    disp ('Optimum order of ROIs for TName{TC}:' );
-    disp(ROIName(BestPerm));
-end
-
-
-%--------------------------------------------------------------------------
-% Hierarchy over time
-FIG = figure;
-COBJ = LFPF.RColors();
-%Colors = COBJ.MatrixColors(STOK_avg.ROIs([1:7]));
-for roi = 1:7
-    plot(Time*1000,squeeze(mean(HscoreM(roi,:,:),2))','linewidth',1.5,'color',Colors(roi,:));
-    hold on;
-end
-xlim([-500 1000])
-legend(STOK_avg.ROIs([1:7]))
-xlabel('Time (msec)')
-ylabel('Hierarchy score')
-set(FIG,'unit','inch','position',[0,0,10,6],'color','w')
-export_fig(FIG,fullfile(SavePath,'PremResults',['Hierarchy_Score_percentChange']),'-pdf'); close; 
-
-
-%% Output/input of layers
-
-Time    = STOK_avg.Time;
-Freq    = STOK_avg.Freq;
-PDC     = STOK_avg.PDC;
-% Convert to percentage
-PDC     = (PDC - mean(PDC(:,:,:,Time>-.3 & Time<0),4))./mean(PDC(:,:,:,Time>-.3 & Time<0),4);
-% Remove diagonal
-for i = 1:size(PDC,1)
-    PDC(i,i,:,:)=0;
-end
-%PDC = permute(PDC,[2 1 3 4]);
-%--------------------------------------------------------------------------
-%for each area separetly
-M = max(PDC(:));
-for roi1 = 1:7
-    FIG = figure;
-    for roi2 = 1:7
-        ind1 = [(roi1-1)*6+1:roi1*6];
-        ind2 = [(roi2-1)*6+1:roi2*6];
-        
-        PDC_temp = squeeze(nanmean(PDC(ind2,ind1,:,:),1));%,
-        
-        for l = 1:6
-            subplot(6,8,(l-1)*8+roi2),imagesc(squeeze(PDC_temp(l,:,:)));
-            set(gca,'xtick',50:100:numel(Time),'xticklabel',round(Time(50:100:numel(Time)),2),...
-            'ytick',5:20:100,'yticklabel',10:20:100);
-           % xtickangle(90);
-            xlim([200 501]);
-            vline(find(round(Time,2)==0,1),'k--');
-            axis xy
-            caxis([-M M]/10)
-            if l ==1
-                title(STOK_avg.ROIs{roi2})
-            end
-        end
-        if l==6 && roi2==1
-            xlabel('Time (msec)');
-            ylabel('Frequency (Hz)');
-        end
-    end
-    
-    colormap('jet')
-    axes('position',[.5 .98 .1 .05]);
-    text(0,0,STOK_avg.ROIs{roi1},'fontsize',12);axis off
-    set(FIG,'unit','inch','position',[0,0,13,8],'color','w')
-    export_fig(FIG,fullfile(SavePath,'PremResults',['STOK_individual_' STOK_avg.ROIs{roi1} '_iPDC_OutPut']),'-pdf','-r200'); close; 
-end
-
-% --------------------------------------------------------------------------
-% Averaged over layers
-Time    = STOK_avg.Time;
-Freq    = STOK_avg.Freq;
-PDC     = STOK_avg.PDC;
-% Convert to percentage
-%PDC     = (PDC - mean(PDC(:,:,:,Time>-.3 & Time<0),4))./mean(PDC(:,:,:,Time>-.3 & Time<0),4);
-% Remove diagonal
-for i = 1:size(PDC,1)
-    PDC(i,i,:,:)=0;
-end
-M = max(PDC(:));
-
-FIG = figure;
-for roi1 = 1:7
-    for roi2 = 1:7
-        ind1 = (roi1-1)*6+1:roi1*6;
-        ind2 = (roi2-1)*6+1:roi2*6;
-        
-        PDC_temp = squeeze(nanmean(nanmean(PDC(ind2,ind1,:,:),1),2));%
-        PDCt(roi2,roi1,:,:)= PDC_temp;
-        subplot(7,7,(roi2-1)*7+roi1),imagesc(PDC_temp);
-               
-        set(gca,'xtick',50:100:numel(Time),'xticklabel',round(Time(50:100:numel(Time)),2),...
-        'ytick',5:20:100,'yticklabel',10:20:100);
-        xlim([200 501]);
-        vline(find(round(Time,2)==0,1),'k--');
-        axis xy
-        caxis([-M M]/2)
-        if roi1 ==1
-            ylabel(STOK_avg.ROIs{roi2},'fontweight','bold')
-        end
-        
-        if roi2 ==1
-            title(STOK_avg.ROIs{roi1})
-        end
-       
-    end
-end
-colormap('jet');
-set(FIG,'unit','inch','position',[0,0,20,10],'color','w')
-export_fig(FIG,fullfile(SavePath,'PremResults',['STOK_individual_AllROIs_iPDC_nonnorm']),'-pdf','-r200'); close; 

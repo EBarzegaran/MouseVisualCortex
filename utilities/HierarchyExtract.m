@@ -12,7 +12,7 @@ MD = M-M';
 Perms = perms(1:NNode);
 MDp = arrayfun(@(x) nansum(nansum(tril(MD(Perms(x,:),Perms(x,:))))),1:size(Perms,1));
 [~,BestPerm] = max(MDp);
-BestPerm =  1:7;%Perms(BestPerm,:); %%%%%%% 
+BestPerm =  1:NNode;%Perms(BestPerm,:); %%%%%%% 
 
 % 2- assign FF and FBs according to order
 Mcc                         = ones(size(M));
@@ -26,7 +26,6 @@ H(1,:)                     = (nansum(Mcc.*M,2) - nansum((Mcc.*M)',2))/(2*nansum(
 
 % 4- initialize the global hierarechy score
 Hcc(1)                     =  nansum(nansum((M.*Mcc).*(H(1,:)'-H(1,:))))/nansum(M(:));
-
 %% iteration to optimize for node and global hierarchy
 % % err         = 1;
 %  for it = 2:5

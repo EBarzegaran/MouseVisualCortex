@@ -40,7 +40,7 @@ end
 
 STOK_AV = squeeze(STOK_AV)./ROI_num;
 %--------------------------------------------------------------------------
-saveresults = false;
+saveresults = true;
 if saveresults
     STOK_avg.PDC    = STOK_AV;
     STOK_avg.Time   = STOKAll.(Sessions_ID{1}).Times;

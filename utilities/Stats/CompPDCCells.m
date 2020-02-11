@@ -1,4 +1,4 @@
-function [Stats,FIG] = CompPDCCells(PDC1,PDC2,avdims,prefactor,plotresults, rdiag, time, freq, figtitle,figpath)
+function [Stats,FIG] = CompPDCCells(PDC1,PDC2,avdims,prefactor,plotresults, rdiag, time, freq, figtitle,figpath, DoMean)
 
 % Compares the PDC values in PDC1 and PDC2 using (mixed-effect) anova
 % INPUTS:
@@ -49,12 +49,25 @@ if ~exist('figtitle','var')
     figtitle=' ';
 end
 
+if ~exist('DoMean','var')
+    DoMean=true;
+end
+
 %% Average data over the requested dimensions
 %-------------------(1) average over dimensions-----------------------
 if ~isempty(avdims)% average over the requested dimensions, otherwise they are considered as independent samples
     for d=1:numel(avdims)
-        PDC1 = cellfun(@(x) nanmean(x,avdims(d)),PDC1,'uni',false);
-        PDC2 = cellfun(@(x) nanmean(x,avdims(d)),PDC2,'uni',false);
+        if DoMean
+            PDC1 = cellfun(@(x) nanmean(x,avdims(d)),PDC1,'uni',false);
+            PDC2 = cellfun(@(x) nanmean(x,avdims(d)),PDC2,'uni',false);
+        else
+            % bring that dimension to the end and add a one instead of that
+            dims = size(PDC1{1});
+            %reshape(permute(PDC1{1},[setdiff(1:numel(dims),avdims(d)) avdims(d)]),[dims(1:avdims(d)-1) 1 dims(avdims(d)+1:numel(dims)-1) dims(end)*dims(avdims(d))]);
+            PDC1 = cellfun(@(x) reshape(permute(x,[setdiff(1:numel(dims),avdims(d)) avdims(d)]),[dims(1:avdims(d)-1) 1 dims(avdims(d)+1:numel(dims)-1) size(x,5)*dims(avdims(d))]),PDC1,'uni',false);
+            PDC2 = cellfun(@(x) reshape(permute(x,[setdiff(1:numel(dims),avdims(d)) avdims(d)]),[dims(1:avdims(d)-1) 1 dims(avdims(d)+1:numel(dims)-1) size(x,5)*dims(avdims(d))]),PDC2,'uni',false);
+           
+        end
     end
 end
 %-------------------(2) pull all the data together---------------------
@@ -93,9 +106,10 @@ if ~(prefactor)
         FIG = PlotStatresults(P,Tval,avdims, time, freq,...
         'figtitle'  ,figtitle,...
         'figpath'   ,figpath,...
-        'PThresh'   ,0.01,...
-        'SThresh'   ,10,...
-        'Twin'      ,[0 1]);
+        'PThresh'   ,0.05,...
+        'SThresh'   ,8,...
+        'Twin'      ,[0 1],...
+        'ColorM'    ,'jet');
     end
 else
 %% %% if additional factor is needed, then I should use anova and linear mixed model, with a within-group factor (pre-post) and between-group factor (PDC1 and PDC2)
@@ -149,7 +163,8 @@ else
             'Pthresh'   ,.01,...
             'SThresh'   ,200,...
             'Twin'      ,[0 1],...
-            'Labels'    ,lme.anova.Term...
+            'Labels'    ,lme.anova.Term,...
+            'ColorM'    ,'jet'...
             );
     end
 

@@ -20,7 +20,7 @@ Y           = reshape(Y,size(Y,1)*size(Y,2),size(Y,3),size(Y,4));
 % Wavelet transform of the data
 S_Wave      = xwt_cmorl_nv(permute(Y,[3 1 2]), Data.srate, freqs, 1, 5);
 % normalize, to minimize 1/f noise
-S_WaveN     = (S_Wave-mean(S_Wave(:,:,:,(Times<0)&(Times>-.03)),4)); % Normalize Spectrum
+S_WaveN     = (S_Wave-mean(S_Wave(:,:,:,(Times<0)&(Times>-.3)),4)); % Normalize Spectrum
 % keep the autospectrum
 AS_Wave     = reshape(S_WaveN,Nodes*Nodes,size(S_WaveN,3),size(S_WaveN,4));
 AS_Wave     = AS_Wave(1:Nodes+1:end,:,:); %diagonal spectrum
@@ -29,7 +29,7 @@ clear S_WaveN
 
 %% STOK
 ff      = .98; % the range of ff to search
-pp      = 6:10:30;  % the range of p to search, which is equal to : 40 to 10 Hz
+pp      = 15;  % the range of p to search, which is equal to : 40 to 10 Hz
 srate   = Data.srate;
 
 for F = 1:numel(ff)

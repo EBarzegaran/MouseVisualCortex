@@ -1,4 +1,4 @@
-function [PDC, Time, Freq] = ExtractRoiPDC(StokAll,ROI1,ROI2)
+function [PDC,  ID_roi, Time, Freq] = ExtractRoiPDC(StokAll,ROI1,ROI2)
 % retruns the PDC data between the two ROIs, if you are interested in the
 % intra area connectivity use a same name for ROI1 and ROI2
 % the ROI names should be from this set: {'VISp','VISl','VISli','VISrl','VISal','VISpm','VISam'}
@@ -16,6 +16,9 @@ function [PDC, Time, Freq] = ExtractRoiPDC(StokAll,ROI1,ROI2)
         idx2 = find(strcmpi(StokAll.(IDs{S}).ROIs,ROI2));
         if ~isempty(idx1) && ~isempty(idx2)
             PDC{S} = StokAll.(IDs{S}).PDC(ROIindices(idx1)+1:ROIindices(idx1+1),ROIindices(idx2)+1:ROIindices(idx2+1),:,:);
+            ID_roi{S} = IDs{S};
+        else
+             ID_roi{S} = 'NaN';
         end
     end
     

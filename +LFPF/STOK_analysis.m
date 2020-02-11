@@ -71,16 +71,14 @@ if ~exist(fullfile(ProjectPath,'Averaged','Fullmodel',['STOK_ALL_' opt.PDCMethod
                 % segment the LFP data according to the ROIs and sub(laminar) labels
                 session.(['S' Sessions_ID{S}]) = extractROIs(Data,probeinfo,LayerInfo.Layers,LayerInfo.(['P' Probes_ID{p}]),Summary,opt.ROIs,session.(['S' Sessions_ID{S}]),fullfile(Savepath,Sessions_ID{S}));
 
-
-                %--------------------plot teh bipolar maps---------------------
+                %--------------------plot bipolar maps---------------------
                 %plot_bipolars(Data,LayerInfo.(['P' Probes_ID{p}]),Probes_ID{p},fullfile(ProjectPath,Sessions_ID{S}));
                 %-----------------------estimate AR params---------------------
                 %if opt.ParamEstimate
-                %    [Error(p) session.(['S' Sessions_ID{S}]).(Data.ROI).Y]= LFPF.ParamEstimation(Data,LayerInfo.(['P' Probes_ID{p}]),opt.Freqs);                
+                % [Error(p) session.(['S' Sessions_ID{S}]).(Data.ROI).Y]= LFPF.ParamEstimation(Data,LayerInfo.(['P' Probes_ID{p}]),opt.Freqs);                
                 %else
                 %    session.(['S' Sessions_ID{S}]).(Data.ROI).Y = -1*Data.Y(:,LayerInfo.(['P' Probes_ID{p}]),:,Data.cnd_info.contrast==.8); 
                 %end
-
 
             end
 
@@ -107,10 +105,10 @@ if ~exist(fullfile(ProjectPath,'Averaged','Fullmodel',['STOK_ALL_' opt.PDCMethod
     %     end
 
         %% Estimate STOK over all ROIs
-        tic
-         [Temp.PDC,Temp.f,Temp.Times,Temp.ROIs] = LFPF.STOKEstimate_All(session.(['S' Sessions_ID{S}]),opt.MOrd, opt.ff,opt.PDCMethod,opt.ROIs,opt.Freqs);
-         StokALL.(['S' Sessions_ID{S}]) = Temp;
-        toc
+         tic
+              [Temp.PDC,Temp.f,Temp.Times,Temp.ROIs] = LFPF.STOKEstimate_All(session.(['S' Sessions_ID{S}]),opt.MOrd, opt.ff,opt.PDCMethod,opt.ROIs,opt.Freqs);
+              StokALL.(['S' Sessions_ID{S}]) = Temp;
+         toc
 
     end
 
@@ -124,7 +122,8 @@ savefig = true;
 %% plot the average
 
 % STOK_Averaged = STOKROIAverage(Stok,[],savefig,Savepath,opt.PDCMethod);
-SignalROIAverage(session,opt.ROIs,savefig,Savepath);    
+SpecEstim =false;
+SignalROIAverage(session,opt.ROIs,savefig,Savepath,SpecEstim,opt.Freqs);    
 
 %% average the whole visual cortex networks
 
