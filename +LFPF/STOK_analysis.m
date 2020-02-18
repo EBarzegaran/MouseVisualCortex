@@ -106,14 +106,16 @@ if ~exist(fullfile(ProjectPath,'Averaged','Fullmodel',['STOK_ALL_' opt.PDCMethod
 
         %% Estimate STOK over all ROIs
          tic
-              [Temp.PDC,Temp.f,Temp.Times,Temp.ROIs] = LFPF.STOKEstimate_All(session.(['S' Sessions_ID{S}]),opt.MOrd, opt.ff,opt.PDCMethod,opt.ROIs,opt.Freqs);
-              StokALL.(['S' Sessions_ID{S}]) = Temp;
+               [Temp.PDC,Temp.f,Temp.Times,Temp.ROIs] = LFPF.STOKEstimate_All(session.(['S' Sessions_ID{S}]),opt.MOrd, opt.ff,opt.PDCMethod,opt.ROIs,opt.Freqs);
+               StokALL.(['S' Sessions_ID{S}]) = Temp;
          toc
 
     end
 
-    save(fullfile(ProjectPath,'Averaged','Fullmodel',['STOK_ALL_' opt.PDCMethod]),'StokALL','-v7.3');
+    %save(fullfile(ProjectPath,'Averaged','Fullmodel',['STOK_ALL_' opt.PDCMethod]),'StokALL','-v7.3');
+    %save(fullfile(ProjectPath,'Averaged','Fullmodel',['SessionSignal']),'session','-v7.3');
 else
+    load(fullfile(ProjectPath,'Averaged','Fullmodel','SessionSignal'));
     load(fullfile(ProjectPath,'Averaged','Fullmodel',['STOK_ALL_' opt.PDCMethod]));
 end
 
@@ -122,7 +124,7 @@ savefig = true;
 %% plot the average
 
 % STOK_Averaged = STOKROIAverage(Stok,[],savefig,Savepath,opt.PDCMethod);
-SpecEstim =false;
+SpecEstim =true;
 SignalROIAverage(session,opt.ROIs,savefig,Savepath,SpecEstim,opt.Freqs);    
 
 %% average the whole visual cortex networks

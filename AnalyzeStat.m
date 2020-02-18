@@ -14,12 +14,30 @@ load ROInames;
 clear StokALL;
 
 %% To indicate which part of the evoked PDC is significant
-for roi = 2:7
+for roi = 1:7
     [~,FIG1] = CompPostPre(PDC(roi,roi),[1],[],1,1,Time,Freq,['Output-intraPDC- ' ROIs{roi}],FigPath);
     [~,FIG2] = CompPostPre(PDC(setdiff(1:nROIs,roi),roi),[1],[],1,1,Time,Freq,['Output-interPDC- ' ROIs{roi}],FigPath);
 end
 
-%% To compare the evoked PDC in different connections
+% check separately the evoked FF and FB
+ind = 1;
+for roi1 = 1:numel(ROIs)
+    for roi2 = roi1+2:numel(ROIs)
+        %if roi1~=4 && roi2~=4
+            PDCFF{ind} = PDC{roi2,roi1};
+            PDCFB{ind} = PDC{roi1,roi2};
+            ind = ind+1;
+        %end
+    end
+end
+
+[~,FIG2] = CompPostPre(PDCFF,[1],[],1,1,Time,Freq,['Output-interPDC-output -FF'],FigPath);
+[~,FIG2] = CompPostPre(PDCFF,[2],[],1,1,Time,Freq,['Output-interPDC-input -FF'],FigPath);
+
+[~,FIG2] = CompPostPre(PDCFB,[1],[],1,1,Time,Freq,['Output-interPDC-output -FB'],FigPath);
+[~,FIG2] = CompPostPre(PDCFB,[2],[],1,1,Time,Freq,['Output-interPDC-input -FB'],FigPath);
+
+%% To compare the evoked PDC in different connections intra vs. inter
 
 % First, the PDCs should be converted to % change
 PDC_change = cellfun(@(x) (x - mean(x(:,:,:,Time<0 & Time>-.3,:),4))./(mean(x(:,:,:,Time<0 & Time>-.3,:),4)),PDC,'uni',false);
@@ -29,6 +47,19 @@ PDC_change = cellfun(@(x) (x - mean(x(:,:,:,Time<0 & Time>-.3,:),4))./(mean(x(:,
 for roi = 1:nROIs
     CompPDCCells(PDC_change(roi,roi),PDC_change(setdiff(1:nROIs,roi),roi),[1],false,1,[1 0],Time,Freq,['Output-(Intra vs. Inter) - ' ROIs{roi}],FigPath);
 end
+% Compare all rois included
+ind = 1;
+ind2 =1;
+for roi1 = 1:numel(ROIs)
+    PDCintra{ind} = PDC_change{roi1,roi1};
+    PDCinter(ind2:ind2+nROIs-2) = PDC_change(setdiff(1:nROIs,roi),roi1);
+    ind = ind+1;
+    ind2 = ind2 +nROIs-1;
+end
+% TOTAL intra vs. inter
+CompPDCCells(PDCintra,PDCinter,[1],false,1,[1 0],Time,Freq,['Output-Averaged-(Intra vs. Inter)- All'],FigPath,false);
+%CompPDCCells(PDCintra,PDCinter,[],false,1,[1 0],Time,Freq,['Outputinput-Averaged-(Intra vs. Inter)- All'],FigPath,false);
+
 
 % average comparison -> intra vs. inter
 for roi = 1:nROIs
@@ -37,8 +68,12 @@ end
 
 % all layer comparison -> intra vs. inter
 CompPDCCells(PDC_change(1,1),PDC_change(2:end,1),[],false,1,[1 0],Time,Freq,['All-InterIntra - ' ROIs{1}]);
+%% compare input vs. output
+for roi = 1:nROIs
+    CompPDCCells(PDC_change(roi,setdiff(1:nROIs,roi)),PDC_change(setdiff(1:nROIs,roi),roi),[1 2],false,1,[1 0],Time,Freq,['Output-(Input vs. output) - ' ROIs{roi}],FigPath);
+end
 
-%% average comparison -> FF vs. FB -> SHould be updated
+%% average comparison -> FF vs. FB 
 PDC_change2 = PDC_change;
 %PDC_change2 = PDC_change2([1:4 6 5 7],[1:4 6 5 7]);
 ind = 1;
@@ -52,15 +87,21 @@ for roi1 = 1:numel(ROIs)
     end
 end
 % TOTAL FB vs. FF
-CompPDCCells(PDCFF,PDCFB,[1 2],false,1,[1 0],Time,Freq,['Output-Averaged-(FF vs. FB)- All'],FigPath,false);
+CompPDCCells(PDCFF,PDCFB,[1 2],false,1,[0 0],Time,Freq,['Output-Averaged-(FF vs. FB)- All'],FigPath,false);
+
+CompPDCCells(PDCFF,PDCFB,[2],false,1,[0 0],Time,Freq,['Output-Averaged-(FF vs. FB)- layers-input - All'],FigPath,false);
+CompPDCCells(PDCFF,PDCFB,[1],false,1,[0 0],Time,Freq,['Output-Averaged-(FF vs. FB)- layers-output - All'],FigPath,false);
+
+CompPDCCells(PDCFF,PDCFB,[],false,1,[0 0],Time,Freq,['Output-Averaged-(FF vs. FB)- layers-outputinput - All'],FigPath,false);
+
 
 % average comparison -> FF vs. FB
 for roi = 2:6
-    CompPDCCells(PDC_change(roi+1:7,roi),PDC_change(1:roi-1,roi),[1 2],false,1,[1 0],Time,Freq,['Output-Averaged-(FF vs. FB)- ' ROIs{roi}],FigPath);
+    CompPDCCells(PDC_change(roi+1:7,roi),PDC_change(1:roi-1,roi),[1 2],false,1,[0 0],Time,Freq,['Output-Averaged-(FF vs. FB)- ' ROIs{roi}],FigPath);
 end
 
 for roi = 2:6
-    CompPDCCells(PDC_change(roi+1:7,roi),PDC_change(1:roi-1,roi),[1],false,1,[1 0],Time,Freq,['Output-(FF vs. FB)- ' ROIs{roi}],FigPath);
+    CompPDCCells(PDC_change(roi+1:7,roi),PDC_change(1:roi-1,roi),[1],false,1,[0 0],Time,Freq,['Output-(FF vs. FB)- ' ROIs{roi}],FigPath);
 end
 
 %% In this part, I use two-way anova to compare inter-intra , pre-post PDC values
@@ -371,6 +412,48 @@ export_fig(fullfile(FigPath,['Output-(Intra vs. Inter) - Average']),'-pdf','-r20
 
 
 
-%%
+%% I was trying to look at the intra-laminar connectivity patterns in different time points of FF abd FB -> what about decomopsition?
+Colors = COBJ.MatrixColors(ROIs,'subcolors');
+
+figure,
+for roi = 1:6
+    subplot(2,3,roi)
+    PDC_temp = squeeze(mean(mean(mean(PDC{roi,roi}(:,:,:,Time>-.3 & Time<0,:),3),4),5));
+    PDC_temp(1:7:end)=0;
+    PDC_temp = (PDC_temp-min(PDC_temp(:)))./(max(PDC_temp(:))-min(PDC_temp(:)));
+    PDC_temp(1:7:end)=sum(PDC_temp,1);
+    plot_graph(PDC_temp,{'L1','L2','L3','L4','L5','L6'},squeeze(Colors(roi,:,:)),'down',0.7)
+    
+    PDC_temp_boot = bootstrap_PDC(PDC_change{roi,roi},100);
+    PDC_boot_base = mean(PDC_temp_boot(:,:,:,Time>0.05 & Time<=0.1,:),4);
+    for f = 1:100
+        f
+        for t = 250:numel(Time)
+            for i = 1:6
+                for j = 1:6
+                    [h,p(i,j,f,t),~,Stats] = ttest(PDC_boot_base(i,j,f,1,:),PDC_temp_boot(i,j,f,t,:));
+                    Tval(i,j,f,t) = Stats.tstat;
+                end
+            end
+        end
+    end
+   
+end
+
+
+    
+dynet_connplot(-1*Tval,Time,Freq)
+ 
+M           = mean(mean(Tval(:,:,:,Time>0.05 & Time<.1),3),4)*-1/20;
+M(1:7:end)  = 0;
+M(M<0)      = 0;
+plot_graph(M,{'L1','L2','L3','L4','L5','L6'},squeeze(Colors(roi,:,:)),'down',0.7)
+
+
+
+M           = mean(mean(Tval(:,:,1:20,Time>0.1 & Time<.3),3),4)*-1/20;
+M(1:7:end)  = 0;
+M(M<0)      = 0;
+figure,plot_graph(M,{'L1','L2','L3','L4','L5','L6'},squeeze(Colors(roi,:,:)),'down',0.7)
 
 

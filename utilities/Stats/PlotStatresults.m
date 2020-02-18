@@ -51,15 +51,15 @@ if numel(pd)==1 % averaged over a dimension
             set(h, 'AlphaData', squeeze(P(:,i,:,:,:)<opt.PThresh)*.8+.2);
         end
         title(opt.Labels{i});
-        set(gca,'xtick',Xticks,'xticklabel',Xticklabels,'ytick',Yticks,'yticklabel',Yticklabels);
+        set(gca,'xtick',Xticks,'xticklabel',Xticklabels*1000,'ytick',Yticks,'yticklabel',Yticklabels,'fontsize',16);
         if i==size(Tval,pd)
-            ylabel('Freq (Hz)');
+            ylabel('Frequency (Hz)');
             xlabel('Time (S)');
             ps = get(gca,'position');
-            cb = colorbar;
-            set(gca,'position',ps);
-            set(cb,'position',get(cb,'position')+[-.05 0 0 0])
-            set(get(cb,'title'),'string','Stat');
+%             cb = colorbar;
+%             set(gca,'position',ps);
+%             set(cb,'position',get(cb,'position')+[-.05 0 0 0])
+%             set(get(cb,'title'),'string','T-Statistics');
         end
 
     end
@@ -84,30 +84,34 @@ elseif numel(pd)==2
             subplot(size(Tval,1),size(Tval,2),(i-1)*size(Tval,1)+j);
             h = imagesc(squeeze(Tval(i,j,:,:,:)));
             caxis([-opt.SThresh opt.SThresh])
-            colormap(jmaColors(opt.ColorM));
+            colormap((opt.ColorM));
             xlim([find(round(time,2)==opt.Twin(1),1) find(round(time,2)==opt.Twin(2),1)])
             axis xy
             set(h, 'AlphaData', squeeze(P(i,j,:,:,:)<opt.PThresh)*.8+.2);
             %----------axis adjust------------------
-            if i==1, title(opt.Labels{i});end
+            if i==1, title(opt.Labels{j});end
             if j==1 
                 ylabel(['L' num2str(i)],'fontweight','bold');
-                set(gca,'ytick',Yticks,'yticklabel',Yticklabels);
+                set(gca,'ytick',Yticks(1:2:end),'yticklabel',Yticklabels(1:2:end));
             else
                 set(gca,'ytick',Yticks,'yticklabel',[]); 
             end
             if i==size(Tval,1)
-                set(gca,'xtick',Xticks,'xticklabel',Xticklabels);
+                
                 if j==size(Tval,2)
+                    set(gca,'xtick',Xticks(1:2:end),'xticklabel',Xticklabels(1:2:end)*1000);
                     xlabel('Time (S)');
                     ylabel('Freq (Hz)');
                     ps = get(gca,'position');
                     colorbar;
                     set(gca,'position',ps);
+                else
+                    set(gca,'xtick',Xticks,'xticklabel',[]);
                 end
             else
                 set(gca,'xtick',Xticks,'xticklabel',[]);
             end
+            set(gca,'fontsize',16);
         end
     end
 end
@@ -119,6 +123,6 @@ axes('position',[.5 .98 .1 .05]); axis off;
 
 dims = size(P);
 dims = sort(dims(1:2));
-set(FIG,'unit','inch','position',[1 1 dims(1)*5 dims(2)*5-2.5],'color','w');
+set(FIG,'unit','inch','position',[1 1 dims(1)*9 dims(2)*3.5],'color','w');
 export_fig(fullfile(opt.figpath,opt.figtitle),'-pdf','-r200');close;
 end

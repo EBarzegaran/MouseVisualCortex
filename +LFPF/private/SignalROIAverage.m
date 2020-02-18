@@ -23,6 +23,7 @@ for roi = 1:numel(ROIs)
     Signal_Averaged.(ROIs{roi}).SNR   = SNR;
     clear Temp P SNR;
 end
+save(fullfile(Path,'Fullmodel','Signal_Averaged'),'Signal_Averaged','-v7.3');
 
 %% Spectrum estimation
 if SpecEstim
@@ -32,16 +33,20 @@ if SpecEstim
             S
             if isfield(Session.(Sessions_ID{S}),ROIs{roi})
                 %[Wavelet_Temp{S} STOK_Temp{S}] = LFPF.SpecEstimate(Session.(Sessions_ID{S}).(ROIs{roi}),Freqs);
-                [Wavelet_Temp{S}] = LFPF.SpecEstimate(Session.(Sessions_ID{S}).(ROIs{roi}),Freqs);
+                [Wavelet_Temp{S} STOK_Temp{S}] = LFPF.SpecEstimate(Session.(Sessions_ID{S}).(ROIs{roi}),Freqs);
+            else
+                Wavelet_Temp{S} =[];
+                STOK_Temp{S}    =[];
             end
         end
-        WaveletPSD.(ROIs{roi}) = mean((cat(4,Wavelet_Temp{:})),4);
-        %STOKPSD.(ROIs{roi}) = mean((cat(4,STOK_Temp{:})),4);
+        %WaveletPSD.(ROIs{roi}) = mean((cat(4,Wavelet_Temp{:})),4);
+        WaveletPSD.(ROIs{roi}) = Wavelet_Temp;
+        STOKPSD.(ROIs{roi}) = STOK_Temp;
         clear Wavelet_Temp STOK_Temp;
     end
 end
 
-
+save(fullfile(Path,'Fullmodel','Signal_PSD'),'WaveletPSD','STOKPSD','t','ROIs','Freqs','-v7.3');
 %% plot the time domain results
 % first the order of ROIs
 

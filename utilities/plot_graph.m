@@ -61,11 +61,11 @@ for N = 1:NNode
 end
 
 %ylim([-1 NNode]+1)
-ylim([min(Coords) max(Coords)]*1.1);
+ylim([min(Coords) max(Coords)]*1);
 XL = -min(Coords)+max(Coords);
 xlim([-XL/2 XL/2]);
 set(gca,'xtick',[],'ytick',[]);
 box on
-disp(NE)
+%disp(NE)
 
 end
