@@ -5,6 +5,7 @@ opt = ParseArgs(varargin,   ... % parse the inputs and indicate default variable
         'MOrd'              ,15,...
         'ff'                ,.98, ...
         'PDCMethod'         ,'iPDC',...
+        'StimParams'         ,[],...
         'ReReadData'        ,false,...
         'ParamEstimate'     ,false,...
         'TimeWin'           ,[],...
@@ -13,22 +14,38 @@ opt = ParseArgs(varargin,   ... % parse the inputs and indicate default variable
         'ROIs'              ,{'VISp','VISl','VISli','VISrl','VISal','VISpm','VISam','VISmma','LP','LGd'}...
         );
 
-%%
+%% File paths and save names
 st = [];av=[];
+Probe_all = [];
+% find all the available sessions
+Sessions_ID     = subfolders(ProjectPath,0); 
 
-Sessions_ID     = subfolders(ProjectPath,0); % find all the available sessions
-
+% you can select a subset of the sessions
 if ~isempty(opt.Sessions_subset)
-    Sessions_ID     = intersect(Sessions_ID,opt.Sessions_subset); % you can select a subset of the sessions
+    Sessions_ID     = intersect(Sessions_ID,opt.Sessions_subset); 
 end
 
+% Path for saving the results
 Savepath = fullfile(ProjectPath,'Averaged');
 if ~exist(Savepath)
     mkdir(Savepath);
 end
 
+% set a name for saving files based on parameters
+FN = fieldnames(opt.StimParams);
+Params = [];
+for i = 1:numel(FN)
+    Params = [Params '_' FN{i} num2str(opt.StimParams.(FN{i}))];
+end
+Params = strrep(Params,'.','-');
+Params = strrep(Params,' ','-');
+SaveName = ['_' Stimuli '_' Params '_'  opt.PDCMethod '_Mord' num2str(opt.MOrd)];
+StimName = ['_' Stimuli '_' Params];
+
 %% for each session and stimuli load the probes data
-if ~exist(fullfile(ProjectPath,'Averaged','Fullmodel',['STOK_ALL_' opt.PDCMethod '.mat']))
+
+if ~exist(fullfile(ProjectPath,'Averaged','Fullmodel',['STOK_ALL' SaveName '.mat']))
+    
     for S = 1:numel(Sessions_ID)
 
         disp(['Analyzing data from session #' Sessions_ID{S}])
@@ -66,11 +83,25 @@ if ~exist(fullfile(ProjectPath,'Averaged','Fullmodel',['STOK_ALL_' opt.PDCMethod
 
                 % load the probe coordinate and label data
                 probeinfo = load(fullfile(ProjectPath,Sessions_ID{S},'MatlabData',[Probes_ID{p} '_Probeinfo']));
+                if ~isfield(probeinfo,'RF_mapping')
+                    gabor_file = fullfile(ProjectPath,Sessions_ID{S},'MatlabData',[Probes_ID{p} '_gabors250.mat']);
+                    probeinfo.RF_mapping = LFPF.RF_mapping(gabor_file);
+                    % save the results
+                    save(fullfile(ProjectPath,Sessions_ID{S},'MatlabData',[Probes_ID{p} '_Probeinfo']),'-struct','probeinfo');
+                end
+                    
                 % use the allen atlas to label the layers and ROIs
                 [Summary,av,st] = GetAllenLabels(probeinfo.Coords,av,st);
                 % segment the LFP data according to the ROIs and sub(laminar) labels
-                session.(['S' Sessions_ID{S}]) = extractROIs(Data,probeinfo,LayerInfo.Layers,LayerInfo.(['P' Probes_ID{p}]),Summary,opt.ROIs,session.(['S' Sessions_ID{S}]),fullfile(Savepath,Sessions_ID{S}));
-
+                [session.(['S' Sessions_ID{S}]), ProbeData] = extractROIs(Data,probeinfo,LayerInfo.Layers,LayerInfo.(['P' Probes_ID{p}]),Summary,opt.ROIs,session.(['S' Sessions_ID{S}]),fullfile(Savepath,Sessions_ID{S}),StimName,opt.StimParams,Sessions_ID{S},Probes_ID{p});
+                % Merge probe information
+                if isempty(Probe_all) 
+                    Probe_all = ProbeData;
+                else
+                    if ~isempty(ProbeData)
+                        Probe_all = [Probe_all; ProbeData];
+                    end
+                end
                 %--------------------plot bipolar maps---------------------
                 %plot_bipolars(Data,LayerInfo.(['P' Probes_ID{p}]),Probes_ID{p},fullfile(ProjectPath,Sessions_ID{S}));
                 %-----------------------estimate AR params---------------------
@@ -93,7 +124,7 @@ if ~exist(fullfile(ProjectPath,'Averaged','Fullmodel',['STOK_ALL_' opt.PDCMethod
             % save the result of analysis, so not evey time you need to estimate
             % model orders
             session_cur = session.(['S' Sessions_ID{S}]);
-            save(fullfile(ProjectPath,Sessions_ID{S},'MatlabData','session_Prep.mat'),'session_cur')
+            save(fullfile(ProjectPath,Sessions_ID{S},'MatlabData',['session_Prep' StimName '.mat']),'session_cur')
         end
 
         %% Run STOK analysis with indicated model order, first on single ROIs
@@ -108,15 +139,20 @@ if ~exist(fullfile(ProjectPath,'Averaged','Fullmodel',['STOK_ALL_' opt.PDCMethod
          tic
                [Temp.PDC,Temp.f,Temp.Times,Temp.ROIs] = LFPF.STOKEstimate_All(session.(['S' Sessions_ID{S}]),opt.MOrd, opt.ff,opt.PDCMethod,opt.ROIs,opt.Freqs);
                StokALL.(['S' Sessions_ID{S}]) = Temp;
+%                [~,Temp.f,Temp.Times,Temp.ROIs,Temp.KF] = LFPF.STOKEstimate_All(session.(['S' Sessions_ID{S}]),opt.MOrd, opt.ff,opt.PDCMethod,opt.ROIs,opt.Freqs,false);
+%                AR_ALL.(['S' Sessions_ID{S}]) = Temp;
          toc
 
     end
 
-    %save(fullfile(ProjectPath,'Averaged','Fullmodel',['STOK_ALL_' opt.PDCMethod]),'StokALL','-v7.3');
-    %save(fullfile(ProjectPath,'Averaged','Fullmodel',['SessionSignal']),'session','-v7.3');
+    save(fullfile(ProjectPath,'Averaged','Fullmodel',['STOK_ALL' SaveName]),'StokALL','-v7.3');
+    save(fullfile(ProjectPath,'Averaged','Fullmodel',['SessionSignal'  StimName]),'session','-v7.3');
+    save(fullfile(ProjectPath,'Averaged','Fullmodel',['Probe_Data_All']),'Probe_all');
+    %save(fullfile(ProjectPath,'Averaged','Fullmodel',['AR_ALL' SaveName]),'AR_ALL','-v7.3');
 else
-    load(fullfile(ProjectPath,'Averaged','Fullmodel','SessionSignal'));
-    load(fullfile(ProjectPath,'Averaged','Fullmodel',['STOK_ALL_' opt.PDCMethod]));
+    load(fullfile(ProjectPath,'Averaged','Fullmodel',['SessionSignal' StimName]));
+    load(fullfile(ProjectPath,'Averaged','Fullmodel',['STOK_ALL' SaveName]));
+    
 end
 
 savefig = true;
@@ -125,13 +161,13 @@ savefig = true;
 
 % STOK_Averaged = STOKROIAverage(Stok,[],savefig,Savepath,opt.PDCMethod);
 SpecEstim =true;
-SignalROIAverage(session,opt.ROIs,savefig,Savepath,SpecEstim,opt.Freqs);    
+SignalROIAverage(session,opt.ROIs,savefig,Savepath,StimName,SpecEstim,opt.Freqs);    
 
 %% average the whole visual cortex networks
 
 STOKAllAverage(StokALL,opt.ROIs,savefig,Savepath,opt.PDCMethod);
-STOKAllLayerStats(StokALL,opt.ROIs,savefig,Savepath,opt.PDCMethod);
-STOKAllDirectStats(StokALL,opt.ROIs,savefig,Savepath,opt.PDCMethod);
+%STOKAllLayerStats(StokALL,opt.ROIs,savefig,Savepath,opt.PDCMethod);
+%STOKAllDirectStats(StokALL,opt.ROIs,savefig,Savepath,opt.PDCMethod);
 
 end
     

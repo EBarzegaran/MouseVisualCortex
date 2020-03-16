@@ -473,3 +473,34 @@ ROIs = STOK_avg.ROIs;
 save('Hierarchyscores','H','ROIs');
 
 
+%--------------------------------------------------------------------------
+% OVER TIME and FREQUENCY
+load ROInames;
+Xticklabels = -.2:.200:1.000;
+Xticks = arrayfun(@(x) find(round(Time,2)==x,1),Xticklabels);
+
+FIG = figure;
+set(FIG,'unit','inch','position',[0,0,6.5,10.5],'color','w');
+
+HMf = (Hf - mean(Hf(:,Time<0 & Time>-.3,:),2))./abs(mean(Hf(:,Time<0 & Time>-.3,:),2))*100;
+
+for roi = 1:NROIs
+    subplot(NROIs,1,roi),
+    imagesc(squeeze(HMf(:,:,roi)));
+    hold on
+    caxis([-30 30])
+    xlim([find(round(Time,2)==-.1,1) find(round(Time,2)==1,1)])
+    axis xy;
+    title(STOK_avg.ROIs{roi})
+    set(gca,'xtick',Xticks,'xticklabel',Xticklabels*1000,'fontsize',14)
+    if roi ==NROIs
+        ylabel('Frequency (Hz)')
+        xlabel('Time (msec)')
+    end
+end
+colormap('jet')
+
+
+export_fig(FIG,fullfile(SavePath,'PremResults',['Hierarchy_Score_PDC_time_freq']),'-pdf'); close; 
+
+

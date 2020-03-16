@@ -1,4 +1,4 @@
-function [Signal_Averaged, FIG] = SignalROIAverage(Session,ROIselect,savefig,Path,SpecEstim,Freqs)
+function [Signal_Averaged, FIG] = SignalROIAverage(Session,ROIselect,savefig,Path,SaveName,SpecEstim,Freqs)
 
 Sessions_ID = fieldnames(Session);
 
@@ -23,7 +23,7 @@ for roi = 1:numel(ROIs)
     Signal_Averaged.(ROIs{roi}).SNR   = SNR;
     clear Temp P SNR;
 end
-save(fullfile(Path,'Fullmodel','Signal_Averaged'),'Signal_Averaged','-v7.3');
+save(fullfile(Path,'Fullmodel',['Signal_Averaged' SaveName]),'Signal_Averaged','-v7.3');
 
 %% Spectrum estimation
 if SpecEstim
@@ -44,9 +44,10 @@ if SpecEstim
         STOKPSD.(ROIs{roi}) = STOK_Temp;
         clear Wavelet_Temp STOK_Temp;
     end
+    save(fullfile(Path,'Fullmodel',['Signal_PSD' SaveName]),'WaveletPSD','STOKPSD','t','ROIs','Freqs','-v7.3');
+
 end
 
-save(fullfile(Path,'Fullmodel','Signal_PSD'),'WaveletPSD','STOKPSD','t','ROIs','Freqs','-v7.3');
 %% plot the time domain results
 % first the order of ROIs
 
@@ -120,7 +121,7 @@ end
 
 set(FIG,'color','w','unit','inch','position',[0 0 4 16])
 if savefig
-    export_fig(FIG,fullfile(Path,['Signal_Averaged_AllROIs']),'-pdf','-r200');
+    export_fig(FIG,fullfile(Path,['Signal_Averaged_AllROIs' SaveName]),'-pdf','-r200');
 end
 
 %% plot the time domain results
@@ -150,7 +151,7 @@ for roi = 1:numel(ROIs)
 end
 set(FIG,'color','w','unit','inch','position',[0 0 4 16])
 if savefig
-    export_fig(FIG,fullfile(Path,['Signal_Averaged_AllROIs_Overlap2']),'-pdf');
+    export_fig(FIG,fullfile(Path,['Signal_Averaged_AllROIs_Overlap2' SaveName]),'-pdf');
 end
 %legend(ROIs)
 %% plot the frequency domain results
@@ -161,11 +162,14 @@ Xticks = arrayfun(@(x) find(round(Times)==x,1),[ -200:200:2000]);
 
 FIG = figure;
 set(FIG,'color','w','unit','inch','position',[0 0 8 12])
-%MSTOK = max(max(mean(abs(STOKPSD.(ROIs{1})))));
-MWav = max(max(mean(abs(WaveletPSD.(ROIs{1})))));
+
+WaveletPSD2 = cellfun(@(x) mean((cat(4,WaveletPSD.(x){:})),4),fieldnames(WaveletPSD),'uni',false);
+
+%MSTOK = max(max(mean(abs(STOKPSD2.(ROIs{1})))));
+MWav = max(max(mean(abs(WaveletPSD2{1}))));
 for roi = 1:numel(ROIs)
 %     subplot(numel(ROIs),2,(roi-1)*2+1);
-%     imagesc(abs(squeeze(mean(STOKPSD.(ROIs{roi})))));
+%     imagesc(abs(squeeze(mean(STOKPSD2.(ROIs{roi})))));
 %     axis xy;
 %     caxis([0 MSTOK]/50);
 %     set(gca,'xtick',Xticks,'xticklabel',round(Times(Xticks)))
@@ -175,7 +179,7 @@ for roi = 1:numel(ROIs)
 %     if roi==1, title('STOK PSD');end
     
     subplot(numel(ROIs),2,(roi-1)*2+2);
-    imagesc(abs(squeeze(mean(WaveletPSD.(ROIs{roi})))));
+    imagesc(abs(squeeze(mean(WaveletPSD2{roi}))));
     axis xy;
     caxis([0 MWav]/10);
     set(gca,'xtick',Xticks,'xticklabel',round(Times(Xticks)))
@@ -197,7 +201,7 @@ end
 colormap('jet')
 
 if savefig
-    export_fig(FIG,fullfile(Path,['Signal_Averaged_AllROIs_PSD']),'-pdf');
+    export_fig(FIG,fullfile(Path,['Signal_Averaged_AllROIs_PSD' SaveName]),'-pdf');
 end
 end
 
@@ -237,7 +241,7 @@ ylabel('SNR (dB)');
 set(FIG,'unit','inch','position',[5 5 5 4],'color','w');
 set(gca,'fontsize',18)
 if savefig
-    export_fig(FIG,fullfile(Path,['Signal_SNR_AllROIs_hierarchyscore']),'-pdf');
+    export_fig(FIG,fullfile(Path,['Signal_SNR_AllROIs_hierarchyscore' SaveName]),'-pdf');
 end
 end
 

@@ -12,9 +12,13 @@ ProjectPath = '/Users/elhamb/Documents/Data/AllenBrainObserver/preliminary_resul
 addpath(genpath('/Users/elhamb/Documents/Codes/Git/AllenMouseAtlas'));
 %% Load the data
 Animal_List = {'766640955','767871931','768515987','771160300','771990200','774875821','778240327','778998620','779839471','781842082','821695405'};
-    
+
+StimParams.contrast = .1;
+%StimParams.orientation = [90 45];
+
 LFPF.STOK_analysis(ProjectPath,'drifting_gratings_75_repeats',...
     'Sessions_subset'   ,Animal_List,...
+    'StimParams'         ,StimParams,...
     'ReReadData'        ,true,...% not necessary to set to true everytime you run the code
     'ParamEstimate'     ,false,...% not really necessary -> not efficient
     'MOrd'              ,15,...

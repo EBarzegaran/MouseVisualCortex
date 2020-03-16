@@ -1,4 +1,7 @@
 function STOKAllAverage(STOKAll,ROIs_Select,savefig,Path,PDCMethod)
+% STOKALL is a structure with animal ID as field names and each
+% STOKALL.Session_ID is a structure itself with the following fields: PDC, f,
+% Times, ROIs
 
 %% Organize ROIs and their order
 Sessions_ID = fieldnames(STOKAll);

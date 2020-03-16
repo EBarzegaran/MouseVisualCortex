@@ -1,7 +1,7 @@
 clear;clc;
 
 addpath(genpath(fileparts(mfilename('fullpath'))));
-load('/Users/elhamb/Documents/Data/AllenBrainObserver/preliminary_results/Averaged/Fullmodel/STOK_ALL_iPDC.mat');
+load('/Users/elhamb/Documents/Data/AllenBrainObserver/preliminary_results/Averaged/Fullmodel/STOK_ALL_iPDC_drifting_gratings_75_repeats_cont01.mat');
 SavePath = '/Users/elhamb/Documents/Data/AllenBrainObserver/preliminary_results/Averaged/Fullmodel';
 FigPath = '/Users/elhamb/Documents/Data/AllenBrainObserver/preliminary_results/Averaged/Fullmodel/StatResults';
 %% Organize PDC values for statistics
@@ -68,7 +68,9 @@ end
 
 % all layer comparison -> intra vs. inter
 CompPDCCells(PDC_change(1,1),PDC_change(2:end,1),[],false,1,[1 0],Time,Freq,['All-InterIntra - ' ROIs{1}]);
+
 %% compare input vs. output
+
 for roi = 1:nROIs
     CompPDCCells(PDC_change(roi,setdiff(1:nROIs,roi)),PDC_change(setdiff(1:nROIs,roi),roi),[1 2],false,1,[1 0],Time,Freq,['Output-(Input vs. output) - ' ROIs{roi}],FigPath);
 end

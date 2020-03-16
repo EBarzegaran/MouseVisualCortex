@@ -1,4 +1,4 @@
-function session = extractROIs(Data,probeinfo,LayerNames,LayerInfo,Summary,ROIs_all,session,savepath)
+function [session, probeinfo_organized] = extractROIs(Data,probeinfo,LayerNames,LayerInfo,Summary,ROIs_all,session,savepath,savename,StimParams,Sessions_ID,Probes_ID)
     
 
 %% How to reduce LGN and LP
@@ -6,7 +6,10 @@ function session = extractROIs(Data,probeinfo,LayerNames,LayerInfo,Summary,ROIs_
 dopca = false;
 %% bipolar re-referencing should be done from top layer to bottom->
 % should be multiplied by -1, here we only use .8 contrast 
-Y = -1*Data.Y(:,:,:,Data.cnd_info.contrast==.8);
+Pnames = fieldnames(StimParams);
+CondSel = cellfun(@(x) ismember(Data.cnd_info.(x),StimParams.(x)),Pnames,'uni',false);
+CondSel = prod(cat(3,CondSel{:}),3);
+Y = -1*Data.Y(:,:,:,CondSel==1);
         
 %% (1) first find the ROIs of interest
 probeinfo.structure_acronyms(cellfun(@(C) any(isnan(C(:))), probeinfo.structure_acronyms))={'NOT'};
@@ -21,13 +24,28 @@ for r = 1:numel(ROIs_ind)
     % (2) extract the data session
         % (a) for visual ROIs, indicate layers using laterinfo and summary
     if strfind(probeinfo.structure_acronyms{ROIs_ind(r)},'VIS') 
-        TempData = Y(:,probeinfo.intervals(ROIs_ind(r)+1):-1:probeinfo.intervals(ROIs_ind(r))+1,:,:);
+        % extract ROI, based on the structure index
+        ROI_ind = probeinfo.intervals(ROIs_ind(r)+1):-1:probeinfo.intervals(ROIs_ind(r))+1;
+        TempData = Y(:,ROI_ind,:,:);
+        
         % extract layer indices
         [~,ind]=intersect(LayerNames,arrayfun(@(x) ['L' num2str(x)],1:6,'uni',false));
         Data.Y = TempData(:,LayerInfo(ind),:,:);
+        
+        Layer_ind = ROI_ind(LayerInfo(ind));
+        Labels = cellfun(@(x) [probeinfo.structure_acronyms{ROIs_ind(r)} '_' x],LayerNames(ind),'uni',false);
+        probeinfo_organized = prepare_probeinfo(probeinfo, Layer_ind, Labels, Sessions_ID, Probes_ID,Summary);
+        
+        % prepare session data
+        Data.unitID     = probeinfo.Coords.id(Layer_ind);
+        Data.ProbeID    = Probes_ID;
+        Data.SessionID  = Sessions_ID;
         session.(probeinfo.structure_acronyms{ROIs_ind(r)}) = Data;
-        ROInames{p} = probeinfo.structure_acronyms{ROIs_ind(r)};
+        ROInames{p}     = probeinfo.structure_acronyms{ROIs_ind(r)};
+        
         p = p+1;
+        
+        
         %-----------------------Plot the results-----------------------
         FIG = figure;
         plot_lfp_expanded(Data.Y,Data.Times,arrayfun(@(x) ['L' num2str(x)],1:6,'uni',false))
@@ -37,7 +55,7 @@ for r = 1:numel(ROIs_ind)
         if ~exist(savepath)
             mkdir(savepath)
         end
-        export_fig(FIG,fullfile(savepath,[probeinfo.structure_acronyms{ROIs_ind(r)}]),'-pdf');close
+        export_fig(FIG,fullfile(savepath,[probeinfo.structure_acronyms{ROIs_ind(r)}  savename]),'-pdf');close
         %--------------------------------------------------------------
     else
     
@@ -54,6 +72,8 @@ for r = 1:numel(ROIs_ind)
                 [coeff,score,latent] = pca(Ytemp');
                 sumData = permute(reshape(score',Dims),[3 1 2 4]);
                 Data.Y = sumData(:,1:6,:,:);
+                probeinfo_organized = [];
+                Layer_ind = [];
                 
             else
                 % extract indices
@@ -64,8 +84,18 @@ for r = 1:numel(ROIs_ind)
                 sumData(:,~isnan(Ind),:,:)    =   Y(:,Ind(~isnan(Ind)),:,:);
                 Data.Y      = sumData;
                 
-                % 
+                %
+                Layer_ind = ROI_ind(LayerInfo(ind));
+                Labels = cellfun(@(x) [probeinfo.structure_acronyms{ROIs_ind(r)} '_' x],LayerNames(ind),'uni',false);
+                probeinfo_organized = prepare_probeinfo(probeinfo, Layer_ind, Labels, Sessions_ID, Probes_ID,Summary);
+
             end
+            
+                    
+            % prepare session data
+            Data.unitID     = probeinfo.Coords.id(Layer_ind);
+            Data.ProbeID    = Probes_ID;
+            Data.SessionID  = Sessions_ID;
             
             session.(probeinfo.structure_acronyms{ROIs_ind(r)}) = Data;
             ROInames{p} = probeinfo.structure_acronyms{ROIs_ind(r)};
@@ -84,7 +114,7 @@ for r = 1:numel(ROIs_ind)
             if ~exist(savepath)
                 mkdir(savepath)
             end
-            export_fig(FIG,fullfile(savepath,[probeinfo.structure_acronyms{ROIs_ind(r)}]),'-pdf'); close
+            export_fig(FIG,fullfile(savepath,[probeinfo.structure_acronyms{ROIs_ind(r)} savename]),'-pdf'); close
             %--------------------------------------------------------------
         end
         
@@ -102,7 +132,9 @@ else
     session.ROIs = ROInames;
 end
 
-
+if ~exist('probeinfo_organized','var')
+    probeinfo_organized = [];
+end
 end
 
 
@@ -125,6 +157,25 @@ function plot_lfp_expanded(Y, Time, labels)
    
    % adjust labels
 
+end
+
+
+function [probeinfo_organized] = prepare_probeinfo(probeinfo, Layer_ind, Labels, Sessions_ID, Probes_ID,Summary)
+    % organize the probe information as a table for saving it later
+    Unit_ID             = probeinfo.Coords.id(Layer_ind)';
+    RF_Conds            = repmat(probeinfo.RF_mapping.Conds,[numel(Unit_ID),1]);
+    Session_ID          = repmat(Sessions_ID,[numel(Unit_ID),1]);
+    Probe_ID            = repmat(Probes_ID,[numel(Unit_ID),1]);
+    AP_CCF              = probeinfo.Coords.AP_CCF(Layer_ind)';
+    ML_CCF              = probeinfo.Coords.ML_CCF(Layer_ind)';
+    DV_CCF              = probeinfo.Coords.DV_CCF(Layer_ind)';
+    RF_Area             = probeinfo.RF_mapping.Area(:,Layer_ind)';
+    RF_Centroid         = permute(probeinfo.RF_mapping.Centroid(:,:,Layer_ind),[3 1 2]);
+    RF_PValue           = probeinfo.RF_mapping.PValue(:,Layer_ind)';
+    RF_Map              = permute(probeinfo.RF_mapping.Maps(:,:,:,Layer_ind),[4 1 2 3]);
+    Summary_Atlas       = cat(1,Summary{Layer_ind,2});
+    
+    probeinfo_organized = table(Unit_ID,Labels, Probe_ID, Session_ID, AP_CCF, ML_CCF, DV_CCF, RF_Area, RF_Centroid, RF_PValue, RF_Map,RF_Conds,Summary_Atlas);
 end
 
 

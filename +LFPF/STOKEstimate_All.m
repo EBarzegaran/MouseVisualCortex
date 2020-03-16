@@ -1,5 +1,10 @@
-function [S_STOK, freqs,Times,ROIs] = STOKEstimate_All(session_Data,P,ff,Method,Orders,freqs)
+function [S_STOK, freqs,Times,ROIs,KF] = STOKEstimate_All(session_Data,P,ff,Method,Orders,freqs,doPDC)
 
+
+%%
+if ~exist('doPDC','var')
+    doPDC = true;
+end
 %% 1) Rearrange data
 ROIs        = session_Data.ROIs;
 
@@ -26,7 +31,10 @@ Y           = cat(2,Y{:});
 %% APPLY STOK
 % final estimation of FC
 KF          = dynet_SSM_STOK(squeeze(Y),P,ff);
-S_STOK      = dynet_ar2pdc(KF,srate,freqs,Method,1, 2,1);
-
+if doPDC
+    S_STOK      = dynet_ar2pdc(KF,srate,freqs,Method,1, 2,1);
+else
+    S_STOK = [];
+end
 end
 
