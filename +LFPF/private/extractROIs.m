@@ -45,6 +45,7 @@ for r = 1:numel(ROIs_ind)
         Labels = cellfun(@(x) [probeinfo.structure_acronyms{ROIs_ind(r)} '_' x],LayerNames(ind),'uni',false);
         probeinfo_organized = prepare_probeinfo(probeinfo, Layer_ind, Labels, Sessions_ID, Probes_ID,Summary);
         
+        
         % prepare session data
         Data.unitID     = probeinfo.Coords.id(Layer_ind);
         Data.ProbeID    = Probes_ID;
@@ -65,11 +66,16 @@ for r = 1:numel(ROIs_ind)
             mkdir(savepath)
         end
         export_fig(FIG,fullfile(savepath,[probeinfo.structure_acronyms{ROIs_ind(r)}  savename]),'-pdf');close
+        
+        FIG = plot_RFMappings(probeinfo,Layer_ind,Labels);
+        export_fig(FIG,fullfile(savepath,[probeinfo.structure_acronyms{ROIs_ind(r)} '_RFmaps']),'-pdf');close
         %--------------------------------------------------------------
     else
     
         % (b) for LGv, LGd and LP, use summary to indicate layers
         labels = probeinfo.intervals(ROIs_ind(r)+1):-1:probeinfo.intervals(ROIs_ind(r))+2;
+         
+       
         % if the layer width is more or equal to 6 electrodes->(6*40)
         if numel(labels)>=6
             TempData = Y(:,labels,:,:);
@@ -94,7 +100,7 @@ for r = 1:numel(ROIs_ind)
                 Data.Y      = sumData;
                 
                 %
-                Layer_ind = ROI_ind(LayerInfo(ind));
+                Layer_ind = (LayerInfo(ind));
                 Labels = cellfun(@(x) [probeinfo.structure_acronyms{ROIs_ind(r)} '_' x],LayerNames(ind),'uni',false);
                 probeinfo_organized = prepare_probeinfo(probeinfo, Layer_ind, Labels, Sessions_ID, Probes_ID,Summary);
 
@@ -124,6 +130,14 @@ for r = 1:numel(ROIs_ind)
                 mkdir(savepath)
             end
             export_fig(FIG,fullfile(savepath,[probeinfo.structure_acronyms{ROIs_ind(r)} savename]),'-pdf'); close
+            
+            FIG = plot_RFMappings(probeinfo,labels,arrayfun(@num2str,labels,'uni',false));
+            print(fullfile(savepath,[probeinfo.structure_acronyms{ROIs_ind(r)} '_RFmaps']),'-dtiff');
+            export_fig(FIG,fullfile(savepath,[probeinfo.structure_acronyms{ROIs_ind(r)} '_RFmaps']),'-pdf');
+            
+            FIG = plot_RFMappings(probeinfo,Layer_ind,arrayfun(@num2str,Layer_ind,'uni',false));
+            export_fig(FIG,fullfile(savepath,[probeinfo.structure_acronyms{ROIs_ind(r)} '_reduced_RFmaps']),'-pdf');
+           
             %--------------------------------------------------------------
         end
         
@@ -144,6 +158,7 @@ end
 if ~exist('probeinfo_organized','var')
     probeinfo_organized = [];
 end
+close all;
 end
 
 
@@ -187,6 +202,31 @@ function [probeinfo_organized] = prepare_probeinfo(probeinfo, Layer_ind, Labels,
     probeinfo_organized = table(Unit_ID,Labels, Probe_ID, Session_ID, AP_CCF, ML_CCF, DV_CCF, RF_Area, RF_Centroid, RF_PValue, RF_Map,RF_Conds,Summary_Atlas);
 end
 
+function FIG = plot_RFMappings(probeinfo,Inds,labels)
+FIG = figure;
+Maps = probeinfo.RF_mapping.Maps(:,:,:,Inds);
+Pvals =  probeinfo.RF_mapping.PValue(:,Inds);
+Area =  probeinfo.RF_mapping.Area(:,Inds);
+for l = 1:numel(Inds)
+    for cond = 1:size(Pvals,1)
+        subplot(numel(Inds),size(Pvals,1),(l-1)*size(Pvals,1)+cond);
+        imagesc(imgaussfilt(Maps(:,:,cond,l),.65));
+        %caxis([-max(Maps(:)) 0])
+        if cond==1
+            ylabel(strrep(labels{l},'_','-'))
+        end
+        
+        if l==1
+            title(['Orient: ' num2str(probeinfo.RF_mapping.Conds.Ovals(cond))]);
+        end
+        
+        xlabel(['P=' num2str(round(Pvals(cond,l),2)) '-A=' num2str(Area(cond,l))])
+    end
+end
 
+%colormap(jmaColors('coolhotcortex'))
+set(FIG,'unit','inch','position',[1 1 size(Pvals,1)*1.5 numel(Inds)*2 ],'paperposition',[1 1 size(Pvals,1)*1.5 numel(Inds)*1.8],'color','w');
+
+end
 
 

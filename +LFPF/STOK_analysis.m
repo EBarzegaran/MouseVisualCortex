@@ -137,8 +137,10 @@ if ~exist(fullfile(ProjectPath,'Averaged','Fullmodel',['STOK_ALL' SaveName '.mat
 
         %% Estimate STOK over all ROIs
          tic
-               [Temp.PDC,Temp.f,Temp.Times,Temp.ROIs] = LFPF.STOKEstimate_All(session.(['S' Sessions_ID{S}]),opt.MOrd, opt.ff,opt.PDCMethod,opt.ROIs,opt.Freqs);
-               StokALL.(['S' Sessions_ID{S}]) = Temp;
+               %[Temp.PDC,Temp.f,Temp.Times,Temp.ROIs] = LFPF.STOKEstimate_All(session.(['S' Sessions_ID{S}]),opt.MOrd, opt.ff,opt.PDCMethod,opt.ROIs,opt.Freqs);
+               %StokALL.(['S' Sessions_ID{S}]) = Temp;
+               
+               
 %                [~,Temp.f,Temp.Times,Temp.ROIs,Temp.KF] = LFPF.STOKEstimate_All(session.(['S' Sessions_ID{S}]),opt.MOrd, opt.ff,opt.PDCMethod,opt.ROIs,opt.Freqs,false);
 %                AR_ALL.(['S' Sessions_ID{S}]) = Temp;
          toc

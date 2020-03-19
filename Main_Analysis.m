@@ -14,12 +14,12 @@ addpath(genpath('/Users/elhamb/Documents/Codes/Git/AllenMouseAtlas'));
 Animal_List = {'766640955','767871931','768515987','771160300','771990200','774875821','778240327','778998620','779839471','781842082','821695405'};
 
 % in case of grating condition
-%Condition = 'drifting_gratings_75_repeats';
-%StimParams.contrast = .1;
+Condition = 'drifting_gratings_75_repeats';
+StimParams.contrast = .8;
 %StimParams.orientation = [90 45];
 
-Condition = 'dot_motion';
-StimParams.Speed = [0.0100 0.0200 0.0400];% 0.0005 0.0010 0.0050 0.0100 0.0200 0.0400
+% Condition = 'dot_motion';
+% StimParams.Speed = [0.0100 0.0200 0.0400];% 0.0005 0.0010 0.0050 0.0100 0.0200 0.0400
 
 LFPF.STOK_analysis(ProjectPath,Condition,...
     'Sessions_subset'   ,Animal_List,...
@@ -29,7 +29,7 @@ LFPF.STOK_analysis(ProjectPath,Condition,...
     'MOrd'              ,15,...
     'ff'                ,.98,...
     'Freqs'             ,1:100,...
-    'ROIs'              ,{'VISp','VISl','VISrl','VISal','VISpm','VISam'},...%,{'LGd','VISp','VISl','VISrl','VISli','LP','VISal','VISpm','VISam','VISmma'},...
+    'ROIs'              ,{'LGd','VISp','VISl','VISrl','VISli','LP','VISal','VISpm','VISam','VISmma'},...%{'VISp','VISl','VISrl','VISal','VISpm','VISam'},...%
     'PDCMethod'         ,'iPDC');
 
 %% 
