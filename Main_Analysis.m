@@ -13,10 +13,15 @@ addpath(genpath('/Users/elhamb/Documents/Codes/Git/AllenMouseAtlas'));
 %% Load the data
 Animal_List = {'766640955','767871931','768515987','771160300','771990200','774875821','778240327','778998620','779839471','781842082','821695405'};
 
-StimParams.contrast = .1;
+% in case of grating condition
+%Condition = 'drifting_gratings_75_repeats';
+%StimParams.contrast = .1;
 %StimParams.orientation = [90 45];
 
-LFPF.STOK_analysis(ProjectPath,'drifting_gratings_75_repeats',...
+Condition = 'dot_motion';
+StimParams.Speed = [0.0100 0.0200 0.0400];% 0.0005 0.0010 0.0050 0.0100 0.0200 0.0400
+
+LFPF.STOK_analysis(ProjectPath,Condition,...
     'Sessions_subset'   ,Animal_List,...
     'StimParams'         ,StimParams,...
     'ReReadData'        ,true,...% not necessary to set to true everytime you run the code

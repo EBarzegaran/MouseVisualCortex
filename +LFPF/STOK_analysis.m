@@ -165,7 +165,7 @@ SignalROIAverage(session,opt.ROIs,savefig,Savepath,StimName,SpecEstim,opt.Freqs)
 
 %% average the whole visual cortex networks
 
-STOKAllAverage(StokALL,opt.ROIs,savefig,Savepath,opt.PDCMethod);
+STOKAllAverage(StokALL,opt.ROIs,savefig,Savepath,SaveName);
 %STOKAllLayerStats(StokALL,opt.ROIs,savefig,Savepath,opt.PDCMethod);
 %STOKAllDirectStats(StokALL,opt.ROIs,savefig,Savepath,opt.PDCMethod);
 

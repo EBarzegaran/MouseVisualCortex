@@ -1,10 +1,12 @@
 
 clear; clc;
-
+FileName = '_dot_motion__Speed0-01--------0-02--------0-04_iPDC_Mord15';%'drifting_gratings_75_repeats__contrast0-8_iPDC_Mord15';
+Path = '/Users/elhamb/Documents/Data/AllenBrainObserver/preliminary_results/Averaged/Fullmodel/';
+%%
 addpath(genpath(fileparts(mfilename('fullpath'))));
-%load('/Users/elhamb/switchdrive/EB/AllenBrainData/STOK_Average_iPDC_ff.98_MOrd10_Thalamus.mat');
-load('/Users/elhamb/Documents/Data/AllenBrainObserver/preliminary_results/Averaged/Fullmodel/STOK_Average_iPDC.mat');
-SavePath = '/Users/elhamb/Documents/Data/AllenBrainObserver/preliminary_results/Averaged/Fullmodel';
+
+load([Path 'STOK_Average_' FileName '.mat']);
+SavePath = Path;
 COBJ = LFPF.RColors();
 Colors = COBJ.MatrixColors(STOK_avg.ROIs);
 load ROInames;
@@ -19,7 +21,7 @@ for roi = 1:NROIs
     ind = [(roi-1)*6+1:roi*6];
     FIG = dynet_connplot(PDC(ind,ind,:,Time>-.2 & Time<1),Time(Time>-.2 & Time<1),Freq,cellfun(@(x) strrep(x,'_','-'),STOK_avg.labels(ind),'uni',false),[],[],[],[],STOK_avg.ROIs{roi});
     set(FIG,'unit','inch','position',[0,0,20,12],'color','w')
-    export_fig(FIG,fullfile(SavePath,['STOK_individual_sustained_' STOK_avg.ROIs{roi} '_iPDC']),'-pdf'); close; 
+    export_fig(FIG,fullfile(SavePath,['STOK_individual_sustained_' STOK_avg.ROIs{roi} FileName]),'-pdf'); close; 
 end
 
 %% Inter-Intra connectivity
@@ -112,28 +114,28 @@ for Cnd =5:5
     figure(1);
     colormap('jet')
     set(FIG1,'unit','inch','position',[0,0,6,15],'color','w');
-    export_fig(FIG1,fullfile(SavePath,'PremResults',[Cnd_var{Cnd} '_AveragedLayers_percent']),'-pdf'); close; 
+    export_fig(FIG1,fullfile(SavePath,'PremResults',[Cnd_var{Cnd} '_AveragedLayers_percent' FileName]),'-pdf'); close; 
     
     figure(2);
-    legend(STOK_avg.ROIs(1:7),'location','northeast')
+    legend(STOK_avg.ROIs,'location','northeast')
     xlim([-.2 1])
-    ylim([-20 110])
+    ylim([-8 4])
     vline(0,'k--');
     hline(0,'k--')
     xlabel('Time (S)');
     ylabel('%change');
     set(FIG2,'unit','inch','position',[0,0,6,4],'color','w');
-    export_fig(FIG2,fullfile(SavePath,'PremResults',[Cnd_var{Cnd} '_AveragedLayers_percent_time']),'-pdf'); 
+    export_fig(FIG2,fullfile(SavePath,'PremResults',[Cnd_var{Cnd} '_AveragedLayers_percent_time' FileName]),'-pdf'); 
     
     
     figure(3);
-    legend(STOK_avg.ROIs(1:7),'location','northeast')
-    subplot(2,1,1);hline(0,'k--'); title('45-100 MS');xlim([5 100]);ylim([-20 110]);
-    subplot(2,1,2);hline(0,'k--'); title('300-1000 MS');xlim([5 100]);ylim([-20 110]);
+    legend(STOK_avg.ROIs,'location','northeast')
+    subplot(2,1,1);hline(0,'k--'); title('45-100 MS');xlim([5 100]);ylim([-8 2]);
+    subplot(2,1,2);hline(0,'k--'); title('300-1000 MS');xlim([5 100]);ylim([-8 2]);
     ylabel('%change');
     xlabel('Frequency (Hz)');
     set(FIG3,'unit','inch','position',[0,0,5,10],'color','w');
-    export_fig(FIG3,fullfile(SavePath,'PremResults',[Cnd_var{Cnd} '_AveragedLayers_percent_freq']),'-pdf'); 
+    export_fig(FIG3,fullfile(SavePath,'PremResults',[Cnd_var{Cnd} '_AveragedLayers_percent_freq' FileName]),'-pdf'); 
     
     close all
 end
@@ -144,7 +146,7 @@ end
 % should it be percent change or not
 Time    = STOK_avg.Time;
 Freq    = STOK_avg.Freq;
-PDC     = STOK_avg.PDC;
+PDC_sub     = STOK_avg.PDC;
 
 % Convert to percentage
 PDC_sub     = (PDC_sub - mean(PDC_sub(:,:,:,Time>-.3 & Time<0),4))./mean(PDC_sub(:,:,:,Time>-.3 & Time<0),4);
@@ -234,10 +236,10 @@ for Cnd = 1:2
     figure(1);
     colormap('jet');
     set(FIG,'unit','inch','position',[0,0,6,15],'color','w')
-    export_fig(FIG,fullfile(SavePath,'PremResults',[Cnd_var{Cnd} '_AveragedLayers']),'-pdf','-r200'); close; 
+    export_fig(FIG,fullfile(SavePath,'PremResults',[Cnd_var{Cnd} '_AveragedLayers' FileName]),'-pdf','-r200'); close; 
     
     figure(2);
-    legend(STOK_avg.ROIs(1:7),'location','northeast')
+    legend(STOK_avg.ROIs,'location','northeast')
     xlim([-.2 1])
     ylim([-20 110])
     vline(0,'k--');
@@ -245,17 +247,17 @@ for Cnd = 1:2
     xlabel('Time (S)');
     ylabel('%change');
     set(FIG2,'unit','inch','position',[0,0,6,4],'color','w');
-    export_fig(FIG2,fullfile(SavePath,'PremResults',[Cnd_var{Cnd} '_AveragedLayers_percent_time']),'-pdf'); 
+    export_fig(FIG2,fullfile(SavePath,'PremResults',[Cnd_var{Cnd} '_AveragedLayers_percent_time' FileName]),'-pdf'); 
     
     
     figure(3);
-    legend(STOK_avg.ROIs(1:7),'location','northeast')
+    legend(STOK_avg.ROIs,'location','northeast')
     subplot(2,1,1);hline(0,'k--'); title('45-100 MS');xlim([5 100]);ylim([-20 120]);
     subplot(2,1,2);hline(0,'k--'); title('300-1000 MS');xlim([5 100]);ylim([-20 120]);
     ylabel('%change');
     xlabel('Frequency (Hz)');
     set(FIG3,'unit','inch','position',[0,0,5,10],'color','w');
-    export_fig(FIG3,fullfile(SavePath,'PremResults',[Cnd_var{Cnd} '_AveragedLayers_percent_freq']),'-pdf'); 
+    export_fig(FIG3,fullfile(SavePath,'PremResults',[Cnd_var{Cnd} '_AveragedLayers_percent_freq' FileName]),'-pdf'); 
     
     close all
 
@@ -348,7 +350,7 @@ for Cnd = 1:size(TW,1)
     set(gca,'fontsize',14)
 end
 
-export_fig(FIG1,fullfile(SavePath,'PremResults',['Matrix_graph_PDCs']),'-pdf','-r300');  
+export_fig(FIG1,fullfile(SavePath,'PremResults',['Matrix_graph_PDCs' FileName]),'-pdf','-r300');  
 %export_fig(FIG2,fullfile(SavePath,'PremResults',['Graph_PDCs']),'-pdf','-r200'); 
 close all;
 
@@ -379,7 +381,7 @@ end
 %
 %HscoreMR = PDC;
 
-for t = 100:numel(Time)
+for t = 50:numel(Time)
     M = (nanmean(HscoreMR(:,:,:,t),3));
     %M = M./nansum(M(:));
     [H(t,:),Hcc(t)] = HierarchyExtract(M);
@@ -387,7 +389,7 @@ end
 
 for f = 1:100
     f
-    for t = 100:numel(Time)
+    for t = 50:numel(Time)
         M = squeeze((HscoreMR(:,:,f,t)));
         %M = M./nansum(M(:));
         [Hf(f,t,:),Hccf(f,t)] = HierarchyExtract(M);
@@ -408,7 +410,7 @@ CP = get(gca,'position');
 caxis([-max(abs(CMM(:))) max(abs(CMM(:)))]);
 set(CB,'position',get(CB,'position')+[0 .4 0.03 -.4]);
 set(gca,'position',CP);
-export_fig(FIG,fullfile(SavePath,'PremResults',['Hierarchy_Score_ROIs_Prestim']),'-pdf'); close; 
+export_fig(FIG,fullfile(SavePath,'PremResults',['Hierarchy_Score_ROIs_Prestim' FileName]),'-pdf'); close; 
 
 %----------------------------Graph style-----------------------------------
 HS = mean(H(Time<0 & Time>-.3,:));
@@ -422,7 +424,7 @@ box off;
 set(gca,'xtick',[],'ytick',round(HS,2));
 ylabel('Functional Hierachy score');
 set(gca,'fontsize',14)
-export_fig(FIG,fullfile(SavePath,'PremResults',['Hierarchy_Score_ROIs_Prestim_graph']),'-pdf'); close; 
+export_fig(FIG,fullfile(SavePath,'PremResults',['Hierarchy_Score_ROIs_Prestim_graph' FileName]),'-pdf'); close; 
 
 %--------------------------------------------------------------------------
 % OVER TIME
@@ -468,7 +470,7 @@ vline(find(round(Time,2)==0,1),'k--')
 set(gca,'fontsize',14)
 
 
-export_fig(FIG,fullfile(SavePath,'PremResults',['Hierarchy_Score_PDC']),'-pdf'); close; 
+export_fig(FIG,fullfile(SavePath,'PremResults',['Hierarchy_Score_PDC' FileName]),'-pdf'); close; 
 ROIs = STOK_avg.ROIs;
 save('Hierarchyscores','H','ROIs');
 
@@ -501,6 +503,6 @@ end
 colormap('jet')
 
 
-export_fig(FIG,fullfile(SavePath,'PremResults',['Hierarchy_Score_PDC_time_freq']),'-pdf'); close; 
+export_fig(FIG,fullfile(SavePath,'PremResults',['Hierarchy_Score_PDC_time_freq' FileName]),'-pdf'); close; 
 
 

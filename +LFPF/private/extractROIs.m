@@ -7,8 +7,17 @@ dopca = false;
 %% bipolar re-referencing should be done from top layer to bottom->
 % should be multiplied by -1, here we only use .8 contrast 
 Pnames = fieldnames(StimParams);
+for PN = 1:numel(Pnames) % check if the speed and directions are in strings
+    if isa(Data.cnd_info.(Pnames{PN}),'char')
+        Data.cnd_info.(Pnames{PN}) = arrayfun(@(x) str2double(Data.cnd_info.(Pnames{PN})(x,:)),1:size(Data.cnd_info.(Pnames{PN}),1),'uni',false);
+        Ind = find(cellfun(@isempty,Data.cnd_info.(Pnames{PN})));
+        for x = Ind, Data.cnd_info.(Pnames{PN}){x}=0; end
+        Data.cnd_info.(Pnames{PN}) = cat(2,Data.cnd_info.(Pnames{PN}){:});
+    end
+end
 CondSel = cellfun(@(x) ismember(Data.cnd_info.(x),StimParams.(x)),Pnames,'uni',false);
 CondSel = prod(cat(3,CondSel{:}),3);
+disp(['#of Conds: ' num2str(sum(CondSel))]);
 Y = -1*Data.Y(:,:,:,CondSel==1);
         
 %% (1) first find the ROIs of interest

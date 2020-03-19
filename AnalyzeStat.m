@@ -1,9 +1,13 @@
 clear;clc;
 
 addpath(genpath(fileparts(mfilename('fullpath'))));
-load('/Users/elhamb/Documents/Data/AllenBrainObserver/preliminary_results/Averaged/Fullmodel/STOK_ALL_iPDC_drifting_gratings_75_repeats_cont01.mat');
-SavePath = '/Users/elhamb/Documents/Data/AllenBrainObserver/preliminary_results/Averaged/Fullmodel';
-FigPath = '/Users/elhamb/Documents/Data/AllenBrainObserver/preliminary_results/Averaged/Fullmodel/StatResults';
+clear; clc;
+FileName = 'dot_motion__Speed0-01--------0-02--------0-04_iPDC_Mord15';%'drifting_gratings_75_repeats__contrast0-1_iPDC_Mord15';
+Path = '/Users/elhamb/Documents/Data/AllenBrainObserver/preliminary_results/Averaged/Fullmodel/';
+%%
+load(fullfile(Path, ['STOK_ALL_' FileName '.mat']));
+SavePath = Path;
+FigPath = fullfile(Path,'StatResults');
 %% Organize PDC values for statistics
 ROIs = {'VISp','VISl','VISrl','VISal','VISpm','VISam'};
 [PDC,IDs,Time,Freq,ROIs] = ExtractAllRoiPDC(StokALL,ROIs);
@@ -14,9 +18,9 @@ load ROInames;
 clear StokALL;
 
 %% To indicate which part of the evoked PDC is significant
-for roi = 1:7
-    [~,FIG1] = CompPostPre(PDC(roi,roi),[1],[],1,1,Time,Freq,['Output-intraPDC- ' ROIs{roi}],FigPath);
-    [~,FIG2] = CompPostPre(PDC(setdiff(1:nROIs,roi),roi),[1],[],1,1,Time,Freq,['Output-interPDC- ' ROIs{roi}],FigPath);
+for roi = 1:nROIs
+    [~,FIG1] = CompPostPre(PDC(roi,roi),[1],[],1,1,Time,Freq,['Output-intraPDC- ' ROIs{roi} '_' FileName],FigPath);
+    [~,FIG2] = CompPostPre(PDC(setdiff(1:nROIs,roi),roi),[1],[],1,1,Time,Freq,['Output-interPDC- ' ROIs{roi} '_' FileName],FigPath);
 end
 
 % check separately the evoked FF and FB
@@ -31,11 +35,11 @@ for roi1 = 1:numel(ROIs)
     end
 end
 
-[~,FIG2] = CompPostPre(PDCFF,[1],[],1,1,Time,Freq,['Output-interPDC-output -FF'],FigPath);
-[~,FIG2] = CompPostPre(PDCFF,[2],[],1,1,Time,Freq,['Output-interPDC-input -FF'],FigPath);
+[~,FIG2] = CompPostPre(PDCFF,[1],[],1,1,Time,Freq,['Output-interPDC-output -FF_' FileName],FigPath);
+[~,FIG2] = CompPostPre(PDCFF,[2],[],1,1,Time,Freq,['Output-interPDC-input -FF_' FileName],FigPath);
 
-[~,FIG2] = CompPostPre(PDCFB,[1],[],1,1,Time,Freq,['Output-interPDC-output -FB'],FigPath);
-[~,FIG2] = CompPostPre(PDCFB,[2],[],1,1,Time,Freq,['Output-interPDC-input -FB'],FigPath);
+[~,FIG2] = CompPostPre(PDCFB,[1],[],1,1,Time,Freq,['Output-interPDC-output -FB_' FileName],FigPath);
+[~,FIG2] = CompPostPre(PDCFB,[2],[],1,1,Time,Freq,['Output-interPDC-input -FB_' FileName],FigPath);
 
 %% To compare the evoked PDC in different connections intra vs. inter
 
@@ -45,7 +49,7 @@ PDC_change = cellfun(@(x) (x - mean(x(:,:,:,Time<0 & Time>-.3,:),4))./(mean(x(:,
 
 % layerwise comparison -> intra vs. inter
 for roi = 1:nROIs
-    CompPDCCells(PDC_change(roi,roi),PDC_change(setdiff(1:nROIs,roi),roi),[1],false,1,[1 0],Time,Freq,['Output-(Intra vs. Inter) - ' ROIs{roi}],FigPath);
+    CompPDCCells(PDC_change(roi,roi),PDC_change(setdiff(1:nROIs,roi),roi),[1],false,1,[1 0],Time,Freq,['Output-(Intra vs. Inter) - ' ROIs{roi} '_' FileName],FigPath);
 end
 % Compare all rois included
 ind = 1;
@@ -57,22 +61,22 @@ for roi1 = 1:numel(ROIs)
     ind2 = ind2 +nROIs-1;
 end
 % TOTAL intra vs. inter
-CompPDCCells(PDCintra,PDCinter,[1],false,1,[1 0],Time,Freq,['Output-Averaged-(Intra vs. Inter)- All'],FigPath,false);
-%CompPDCCells(PDCintra,PDCinter,[],false,1,[1 0],Time,Freq,['Outputinput-Averaged-(Intra vs. Inter)- All'],FigPath,false);
+CompPDCCells(PDCintra,PDCinter,[1],false,1,[1 0],Time,Freq,['Output-Averaged-(Intra vs. Inter)- All_' FileName],FigPath,false);
+CompPDCCells(PDCintra,PDCinter,[],false,1,[1 0],Time,Freq,['Outputinput-Averaged-(Intra vs. Inter)- All_' FileName],FigPath,false);
 
 
 % average comparison -> intra vs. inter
 for roi = 1:nROIs
-    CompPDCCells(PDC_change(roi,roi),PDC_change(setdiff(1:nROIs,roi),roi),[1 2],false,1,[1 0],Time,Freq,['Output-Averaged-(Intra vs. Inter)- ' ROIs{roi}],FigPath);
+    CompPDCCells(PDC_change(roi,roi),PDC_change(setdiff(1:nROIs,roi),roi),[1 2],false,1,[1 0],Time,Freq,['Output-Averaged-(Intra vs. Inter)- ' ROIs{roi} '_' FileName],FigPath);
 end
 
 % all layer comparison -> intra vs. inter
-CompPDCCells(PDC_change(1,1),PDC_change(2:end,1),[],false,1,[1 0],Time,Freq,['All-InterIntra - ' ROIs{1}]);
+CompPDCCells(PDC_change(1,1),PDC_change(2:end,1),[],false,1,[1 0],Time,Freq,['All-InterIntra - ' ROIs{1} '_' FileName]);
 
 %% compare input vs. output
 
 for roi = 1:nROIs
-    CompPDCCells(PDC_change(roi,setdiff(1:nROIs,roi)),PDC_change(setdiff(1:nROIs,roi),roi),[1 2],false,1,[1 0],Time,Freq,['Output-(Input vs. output) - ' ROIs{roi}],FigPath);
+    CompPDCCells(PDC_change(roi,setdiff(1:nROIs,roi)),PDC_change(setdiff(1:nROIs,roi),roi),[1 2],false,1,[1 0],Time,Freq,['Output-(Input vs. output) - ' ROIs{roi} '_' FileName],FigPath);
 end
 
 %% average comparison -> FF vs. FB 
@@ -80,30 +84,28 @@ PDC_change2 = PDC_change;
 %PDC_change2 = PDC_change2([1:4 6 5 7],[1:4 6 5 7]);
 ind = 1;
 for roi1 = 1:numel(ROIs)
-    for roi2 = roi1+2:numel(ROIs)
-        %if roi1~=4 && roi2~=4
-            PDCFF{ind} = PDC_change2{roi2,roi1};
-            PDCFB{ind} = PDC_change2{roi1,roi2};
-            ind = ind+1;
-        %end
+    for roi2 = roi1+1:numel(ROIs)
+        PDCFF{ind} = PDC_change2{roi2,roi1};
+        PDCFB{ind} = PDC_change2{roi1,roi2};
+        ind = ind+1;
     end
 end
 % TOTAL FB vs. FF
-CompPDCCells(PDCFF,PDCFB,[1 2],false,1,[0 0],Time,Freq,['Output-Averaged-(FF vs. FB)- All'],FigPath,false);
+CompPDCCells(PDCFF,PDCFB,[1 2],false,1,[0 0],Time,Freq,['Output-Averaged-(FF vs. FB)- All_' FileName],FigPath,false);
 
-CompPDCCells(PDCFF,PDCFB,[2],false,1,[0 0],Time,Freq,['Output-Averaged-(FF vs. FB)- layers-input - All'],FigPath,false);
-CompPDCCells(PDCFF,PDCFB,[1],false,1,[0 0],Time,Freq,['Output-Averaged-(FF vs. FB)- layers-output - All'],FigPath,false);
+CompPDCCells(PDCFF,PDCFB,[2],false,1,[0 0],Time,Freq,['Output-Averaged-(FF vs. FB)- layers-input - All_' FileName],FigPath,false);
+CompPDCCells(PDCFF,PDCFB,[1],false,1,[0 0],Time,Freq,['Output-Averaged-(FF vs. FB)- layers-output - All_' FileName],FigPath,false);
 
-CompPDCCells(PDCFF,PDCFB,[],false,1,[0 0],Time,Freq,['Output-Averaged-(FF vs. FB)- layers-outputinput - All'],FigPath,false);
+CompPDCCells(PDCFF,PDCFB,[],false,1,[0 0],Time,Freq,['Output-Averaged-(FF vs. FB)- layers-outputinput - All_' FileName],FigPath,false);
 
 
 % average comparison -> FF vs. FB
-for roi = 2:6
-    CompPDCCells(PDC_change(roi+1:7,roi),PDC_change(1:roi-1,roi),[1 2],false,1,[0 0],Time,Freq,['Output-Averaged-(FF vs. FB)- ' ROIs{roi}],FigPath);
+for roi = 2:nROIs-1
+    CompPDCCells(PDC_change(roi+1:nROIs,roi),PDC_change(1:roi-1,roi),[1 2],false,1,[0 0],Time,Freq,['Output-Averaged-(FF vs. FB)- ' ROIs{roi} '_' FileName],FigPath);
 end
 
-for roi = 2:6
-    CompPDCCells(PDC_change(roi+1:7,roi),PDC_change(1:roi-1,roi),[1],false,1,[0 0],Time,Freq,['Output-(FF vs. FB)- ' ROIs{roi}],FigPath);
+for roi = 2:nROIs-1
+    CompPDCCells(PDC_change(roi+1:nROIs,roi),PDC_change(1:roi-1,roi),[1],false,1,[0 0],Time,Freq,['Output-(FF vs. FB)- ' ROIs{roi} '_' FileName],FigPath);
 end
 
 %% In this part, I use two-way anova to compare inter-intra , pre-post PDC values

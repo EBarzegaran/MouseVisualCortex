@@ -63,6 +63,9 @@ if numel(pd)==1 % averaged over a dimension
         end
 
     end
+    dims = size(P);
+    dims = sort(dims(1:2));
+    set(FIG,'unit','inch','position',[1 1 dims(1)*5 dims(2)*3.5],'color','w');
 %-----------------------PLOT AVERAGED RESULTS-----------------------------        
 elseif numel(pd)==0
     h = imagesc(squeeze(Tval(:,:,:,:,:)));
@@ -77,6 +80,9 @@ elseif numel(pd)==0
     ylabel('Frequency (Hz)');
     colorbar;
     set(gca,'fontsize',16)
+    dims = size(P);
+    dims = sort(dims(1:2));
+    set(FIG,'unit','inch','position',[1 1 dims(1)*9 dims(2)*3.5],'color','w');
 %-----------------------PLOT NON AVERAGED RESULTS-------------------------       
 elseif numel(pd)==2
     for i = 1:size(Tval,1)
@@ -114,15 +120,13 @@ elseif numel(pd)==2
             set(gca,'fontsize',16);
         end
     end
+    dims = size(P);
+    dims = sort(dims(1:2));
+    set(FIG,'unit','inch','position',[1 1 dims(1)*5 dims(2)*3.5],'color','w');
 end
 %--------------figure title-------------------------
 axes('position',[.5 .98 .1 .05]); axis off;
 %text(0,0,opt.figtitle,'HorizontalAlignment','center','fontsize',16);
 
-
-
-dims = size(P);
-dims = sort(dims(1:2));
-set(FIG,'unit','inch','position',[1 1 dims(1)*9 dims(2)*3.5],'color','w');
 export_fig(fullfile(opt.figpath,opt.figtitle),'-pdf','-r200');close;
 end

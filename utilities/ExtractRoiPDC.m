@@ -10,20 +10,25 @@ function [PDC,  ID_roi, Time, Freq] = ExtractRoiPDC(StokAll,ROI1,ROI2)
     IDs = fieldnames(StokAll);
 %%    
     for S = 1:numel(IDs)
+        if S==1
+            Time = StokAll.(IDs{S}).Times;
+            Freq = StokAll.(IDs{S}).f;
+        end
+        
         ROIsizes = contains(StokAll.(IDs{S}).ROIs,'VIS')*3+3;
         ROIindices = [0 cumsum(ROIsizes)];
         idx1 = find(strcmpi(StokAll.(IDs{S}).ROIs,ROI1));
         idx2 = find(strcmpi(StokAll.(IDs{S}).ROIs,ROI2));
         if ~isempty(idx1) && ~isempty(idx2)
-            PDC{S} = StokAll.(IDs{S}).PDC(ROIindices(idx1)+1:ROIindices(idx1+1),ROIindices(idx2)+1:ROIindices(idx2+1),:,:);
+            PDC{S} = StokAll.(IDs{S}).PDC(ROIindices(idx1)+1:ROIindices(idx1+1),ROIindices(idx2)+1:ROIindices(idx2+1),:,1:numel(Time));
             ID_roi{S} = IDs{S};
         else
              ID_roi{S} = 'NaN';
         end
     end
     
-    Time = StokAll.(IDs{S}).Times;
-    Freq = StokAll.(IDs{S}).f;
+%     Time = StokAll.(IDs{S}).Times;
+%     Freq = StokAll.(IDs{S}).f;
     
     if exist('PDC','var')
         PDC = cat(5,PDC{:});

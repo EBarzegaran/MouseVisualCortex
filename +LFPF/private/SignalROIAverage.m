@@ -7,13 +7,21 @@ ROIs = cellfun(@(x) Session.(x).ROIs,Sessions_ID,'uni',false);
 ROI_counts = accumarray(ic,1); % ROI counts
 
 for roi = 1:numel(ROIs)
+    disp(ROIs{roi})
     for S = 1:numel(Sessions_ID)
+            
         if isfield(Session.(Sessions_ID{S}),ROIs{roi})
             t = Session.(Sessions_ID{S}).(ROIs{roi}).Times;
-            Temp{S} =  squeeze(mean(mean(Session.(Sessions_ID{S}).(ROIs{roi}).Y(:,:,:,1:4),1),4));
+            if (S==1) && (roi==1)
+                Ind = 1:numel(t);
+            end
+            
+            Temp{S} =  squeeze(mean(mean(Session.(Sessions_ID{S}).(ROIs{roi}).Y(:,:,Ind,:),1),4));
             P(S)    =  mean((mean(Temp{S}(:,t>0).^2,2)),1)*250;
             SNR(S)  =  max((max(Temp{S}(:,t>0).^2,[],2)),[],1)./mean((mean(Temp{S}(:,t<0 & t>-.3).^2,2)),1);
-            Signal_Averaged.(ROIs{roi}).Times = Session.(Sessions_ID{S}).(ROIs{roi}).Times;
+            if S <5
+                Signal_Averaged.(ROIs{roi}).Times = Session.(Sessions_ID{S}).(ROIs{roi}).Times(Ind);
+            end
         end
     end
     Signal_Averaged.(ROIs{roi}).SM  = mean(cat(3,Temp{:}),3);
@@ -27,25 +35,30 @@ save(fullfile(Path,'Fullmodel',['Signal_Averaged' SaveName]),'Signal_Averaged','
 
 %% Spectrum estimation
 if SpecEstim
-    for roi = 1:numel(ROIs)
-        disp(ROIs{roi})
-        for S = 1:numel(Sessions_ID)
-            S
-            if isfield(Session.(Sessions_ID{S}),ROIs{roi})
-                %[Wavelet_Temp{S} STOK_Temp{S}] = LFPF.SpecEstimate(Session.(Sessions_ID{S}).(ROIs{roi}),Freqs);
-                [Wavelet_Temp{S} STOK_Temp{S}] = LFPF.SpecEstimate(Session.(Sessions_ID{S}).(ROIs{roi}),Freqs);
-            else
-                Wavelet_Temp{S} =[];
-                STOK_Temp{S}    =[];
+    if ~exist(fullfile(Path,'Fullmodel',['Signal_PSD' SaveName '.mat']))
+        for roi = 1:numel(ROIs)
+            disp(ROIs{roi})
+            for S = 1:numel(Sessions_ID)
+                S
+                if isfield(Session.(Sessions_ID{S}),ROIs{roi})
+                    %[Wavelet_Temp{S} STOK_Temp{S}] = LFPF.SpecEstimate(Session.(Sessions_ID{S}).(ROIs{roi}),Freqs);
+                    Data = Session.(Sessions_ID{S}).(ROIs{roi});
+                    Data.Y = Data.Y(:,:,Ind,:);
+                    [Wavelet_Temp{S} STOK_Temp{S}] = LFPF.SpecEstimate(Data,Freqs);
+                else
+                    Wavelet_Temp{S} =[];
+                    STOK_Temp{S}    =[];
+                end
             end
+            %WaveletPSD.(ROIs{roi}) = mean((cat(4,Wavelet_Temp{:})),4);
+            WaveletPSD.(ROIs{roi}) = Wavelet_Temp;
+            STOKPSD.(ROIs{roi}) = STOK_Temp;
+            clear Wavelet_Temp STOK_Temp;
         end
-        %WaveletPSD.(ROIs{roi}) = mean((cat(4,Wavelet_Temp{:})),4);
-        WaveletPSD.(ROIs{roi}) = Wavelet_Temp;
-        STOKPSD.(ROIs{roi}) = STOK_Temp;
-        clear Wavelet_Temp STOK_Temp;
+        save(fullfile(Path,'Fullmodel',['Signal_PSD' SaveName]),'WaveletPSD','STOKPSD','t','ROIs','Freqs','-v7.3');
+    else
+        load(fullfile(Path,'Fullmodel',['Signal_PSD' SaveName '.mat']));
     end
-    save(fullfile(Path,'Fullmodel',['Signal_PSD' SaveName]),'WaveletPSD','STOKPSD','t','ROIs','Freqs','-v7.3');
-
 end
 
 %% plot the time domain results
@@ -65,7 +78,7 @@ COBJ = LFPF.RColors();
 Colors = COBJ.MatrixColors(ROIs,'SubColors');
 %---------------------------------------------------
 Times = Signal_Averaged.(ROIs{roi}).Times*1000;
-Xticks = arrayfun(@(x) find(round(Times)==x,1),[ 0:200:1000]);
+Xticks = arrayfun(@(x) find(round(Signal_Averaged.(ROIs{roi}).Times,2)*1000==x,1),[ 0:200:1000]);
 
 Yticks = arrayfun(@(x) ['L' num2str(x)],1:6,'uni',false);
 %--------------------------------------------------
@@ -158,10 +171,11 @@ end
 if SpecEstim
 %---------------------------------------------------
 Times = Signal_Averaged.(ROIs{roi}).Times*1000;
-Xticks = arrayfun(@(x) find(round(Times)==x,1),[ -200:200:2000]);
+Xticks = arrayfun(@(x) find(round(Signal_Averaged.(ROIs{roi}).Times,2)*1000==x,1),[ 0:200:1000]);
 
 FIG = figure;
 set(FIG,'color','w','unit','inch','position',[0 0 8 12])
+%WaveletPSD = cellfun(@(y) cellfun(@(x) x(:,:,1:376),WaveletPSD.(y),'uni',false),fieldnames(WaveletPSD));
 
 WaveletPSD2 = cellfun(@(x) mean((cat(4,WaveletPSD.(x){:})),4),fieldnames(WaveletPSD),'uni',false);
 
