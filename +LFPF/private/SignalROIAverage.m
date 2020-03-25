@@ -166,6 +166,7 @@ set(FIG,'color','w','unit','inch','position',[0 0 4 16])
 if savefig
     export_fig(FIG,fullfile(Path,['Signal_Averaged_AllROIs_Overlap2' SaveName]),'-pdf');
 end
+close all
 %legend(ROIs)
 %% plot the frequency domain results
 if SpecEstim
@@ -173,41 +174,81 @@ if SpecEstim
 Times = Signal_Averaged.(ROIs{roi}).Times*1000;
 Xticks = arrayfun(@(x) find(round(Signal_Averaged.(ROIs{roi}).Times,2)*1000==x,1),[ 0:200:1000]);
 
-FIG = figure;
-set(FIG,'color','w','unit','inch','position',[0 0 8 12])
+FIG = figure(1);
+set(FIG,'color','w','unit','inch','position',[0 0 10 12])
+
+ FIG2 = figure(2);
+ set(FIG2,'color','w','unit','inch','position',[0 0 25 20]);
 %WaveletPSD = cellfun(@(y) cellfun(@(x) x(:,:,1:376),WaveletPSD.(y),'uni',false),fieldnames(WaveletPSD));
 
-WaveletPSD2 = cellfun(@(x) mean((cat(4,WaveletPSD.(x){:})),4),fieldnames(WaveletPSD),'uni',false);
+WaveletPSD2 = cellfun(@(x) mean((cat(4,WaveletPSD.(x){:})),4),ROIs,'uni',false);
 
-%MSTOK = max(max(mean(abs(STOKPSD2.(ROIs{1})))));
 MWav = max(max(mean(abs(WaveletPSD2{1}))));
 for roi = 1:numel(ROIs)
-%     subplot(numel(ROIs),2,(roi-1)*2+1);
-%     imagesc(abs(squeeze(mean(STOKPSD2.(ROIs{roi})))));
-%     axis xy;
-%     caxis([0 MSTOK]/50);
-%     set(gca,'xtick',Xticks,'xticklabel',round(Times(Xticks)))
-%     xlim([find(round(Times)==-100,1) find(round(Times)==1000,1)]);
-%     vline(find(round(Times)==0,1),'k--');
-%     ylabel(ROI_names.(ROIs{roi}),'fontweight','bold')
-%     if roi==1, title('STOK PSD');end
+    figure(2);
+    WW = WaveletPSD2{roi};
+    WW2 = log10(abs(mean(WaveletPSD2{roi}(:,:,t<0 & t>-.3),3)));
+    for i = 1:6
+        subplot(6,numel(ROIs),(i-1)*numel(ROIs)+roi)
+        plot(log10(Freqs),(log10(abs(squeeze(mean((WW(i,:,t>0)),3))))-squeeze(WW2(i,:))),'k','linewidth',1.5);
+        %ylim([0 max(WW(:))*.8])
+        ylim([-.2 1])
+        xlim([0 log10(100)])
+        set(gca,'xtick', log10(Freqs([1 5 10 20 30 50 100])),'xticklabel',Freqs([1 5 10 20 30 50 100]))
+        if i==1
+            title(ROI_names.(ROIs{roi}));
+        end
+        if roi==1
+            ylabel(['L' num2str(i)]);
+        end
+        if (roi==numel(ROIs)) && (i==6)
+            xlabel('Time (Sec)');
+            ylabel('Frequency (Hz)');
+        end
+    end
     
+    
+
+    figure(1)
     subplot(numel(ROIs),2,(roi-1)*2+2);
-    imagesc(abs(squeeze(mean(WaveletPSD2{roi}))));
-    axis xy;
-    caxis([0 MWav]/10);
-    set(gca,'xtick',Xticks,'xticklabel',round(Times(Xticks)))
-    xlim([find(round(Times)==-100,1) find(round(Times)==1000,1)]);
-    vline(find(round(Times)==0,1),'k--');
+    BRWV = abs(squeeze(mean(WaveletPSD2{roi}-(mean(WaveletPSD2{roi}(:,:,t>-.3 & t<0),3))))); %baseline removed
+    contourf(t(~isnan(t)),log10(Freqs(Freqs>2)),10*log10(BRWV(Freqs>2,~isnan(t))),100,'linecolor','none');
+    caxis([-12 -8]*10);
+    set(gca,'ytick',log10([5 10 20 30 50 100]),'yticklabel',[5 10 20 30 50 100])
+    xlim([-.2 1]);
+    vline(0,'k--');
     if roi ==numel(ROIs)
-        xlabel('Time (msec)');
+        xlabel('Time (Sec)');
         ylabel('Frequency (Hz)');
         SPP = get(gca,'position');
         CB = colorbar;
         set(gca,'position',SPP);
         set(CB,'position',get(CB,'position')+[-.04 0 0 0])
-        
     end
+    title(ROI_names.(ROIs{roi}));
+    set(gca,'fontsize',14)
+    
+    
+    subplot(numel(ROIs),2,(roi-1)*2+1);
+    BRWV = abs(squeeze(mean(WaveletPSD2{roi}-(mean(WaveletPSD2{roi}(:,:,t>-.3 & t<0),3))))); %baseline removed
+    contourf(t(~isnan(t)),(Freqs(Freqs>2)),(BRWV(Freqs>2,~isnan(t))),100,'linecolor','none');
+    if roi ==1
+        MMax = max(BRWV(:))/20;
+    end
+    caxis([0 MMax]);
+    %set(gca,'ytick',[5 10 20 30 50 100],'yticklabel',[5 10 20 30 50 100])
+    xlim([-.2 1]);
+    vline(0,'k--');
+    if roi ==numel(ROIs)
+        xlabel('Time (Sec)');
+        ylabel('Frequency (Hz)');
+        SPP = get(gca,'position');
+        CB = colorbar;
+        set(gca,'position',SPP);
+        set(CB,'position',get(CB,'position')+[-.04 0 0 0])
+    end
+
+        
     title(ROI_names.(ROIs{roi}));
     set(gca,'fontsize',14)
 
@@ -215,7 +256,9 @@ end
 colormap('jet')
 
 if savefig
-    export_fig(FIG,fullfile(Path,['Signal_Averaged_AllROIs_PSD' SaveName]),'-pdf');
+    %export_fig(FIG,fullfile(Path,['Signal_Averaged_AllROIs_PSD' SaveName]),'-pdf','-d200');
+    export_fig(FIG,fullfile(Path,['Signal_Averaged_AllROIs_PSD' SaveName]),'-pdf','-d200');
+    export_fig(FIG2,fullfile(Path,['Signal_Averaged_AllROIs_PSD_layers' SaveName]),'-pdf','-d200');
 end
 end
 
