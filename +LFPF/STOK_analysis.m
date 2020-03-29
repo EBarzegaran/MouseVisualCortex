@@ -93,7 +93,7 @@ if ~exist(fullfile(ProjectPath,'Averaged','Fullmodel',['STOK_ALL' SaveName '.mat
                 % use the allen atlas to label the layers and ROIs
                 [Summary,av,st] = GetAllenLabels(probeinfo.Coords,av,st);
                 % segment the LFP data according to the ROIs and sub(laminar) labels
-                [session.(['S' Sessions_ID{S}]), ProbeData] = extractROIs(Data,probeinfo,LayerInfo.Layers,LayerInfo.(['P' Probes_ID{p}]),Summary,opt.ROIs,session.(['S' Sessions_ID{S}]),fullfile(Savepath,Sessions_ID{S}),StimName,opt.StimParams,Sessions_ID{S},Probes_ID{p});
+                [session.(['S' Sessions_ID{S}]), ProbeData] = extractROIs(Data,probeinfo,LayerInfo.Layers,LayerInfo.(['P' Probes_ID{p}]),Summary,opt.ROIs,session.(['S' Sessions_ID{S}]),fullfile(Savepath,Sessions_ID{S}),StimName,opt.StimParams,Sessions_ID{S},Probes_ID{p},false);
                 % Merge probe information
                 if isempty(Probe_all) 
                     Probe_all = ProbeData;
@@ -137,8 +137,8 @@ if ~exist(fullfile(ProjectPath,'Averaged','Fullmodel',['STOK_ALL' SaveName '.mat
 
         %% Estimate STOK over all ROIs
          tic
-               %[Temp.PDC,Temp.f,Temp.Times,Temp.ROIs] = LFPF.STOKEstimate_All(session.(['S' Sessions_ID{S}]),opt.MOrd, opt.ff,opt.PDCMethod,opt.ROIs,opt.Freqs);
-               %StokALL.(['S' Sessions_ID{S}]) = Temp;
+               [Temp.PDC,Temp.f,Temp.Times,Temp.ROIs] = LFPF.STOKEstimate_All(session.(['S' Sessions_ID{S}]),opt.MOrd, opt.ff,opt.PDCMethod,opt.ROIs,opt.Freqs);
+               StokALL.(['S' Sessions_ID{S}]) = Temp;
                
                
 %                [~,Temp.f,Temp.Times,Temp.ROIs,Temp.KF] = LFPF.STOKEstimate_All(session.(['S' Sessions_ID{S}]),opt.MOrd, opt.ff,opt.PDCMethod,opt.ROIs,opt.Freqs,false);

@@ -19,19 +19,41 @@ for roi = 1:numel(ROIs)
             Temp{S} =  squeeze(mean(mean(Session.(Sessions_ID{S}).(ROIs{roi}).Y(:,:,Ind,:),1),4));
             P(S)    =  mean((mean(Temp{S}(:,t>0).^2,2)),1)*250;
             SNR(S)  =  max((max(Temp{S}(:,t>0).^2,[],2)),[],1)./mean((mean(Temp{S}(:,t<0 & t>-.3).^2,2)),1);
+            
+            % FFT
+            Session.(Sessions_ID{S}).(ROIs{roi}).Y = Session.(Sessions_ID{S}).(ROIs{roi}).Y(:,:,Ind,:);
+            Session.(Sessions_ID{S}).(ROIs{roi}).Times = Session.(Sessions_ID{S}).(ROIs{roi}).Times(Ind);
+            [PostStim,PreStim]  =  FFT_estimate(Session.(Sessions_ID{S}).(ROIs{roi}));
+            
+            FFT{S} = PostStim.FFT;
+            AMP{S} = PostStim.AMP;
+            F      = PostStim.F;
+            
+            FFT_Pres{S} = PreStim.FFT;
+            AMP_Pres{S} = PreStim.AMP;
+            F_Pres      = PreStim.F;
             if S <5
                 Signal_Averaged.(ROIs{roi}).Times = Session.(Sessions_ID{S}).(ROIs{roi}).Times(Ind);
             end
         end
     end
+    % Signal Data
     Signal_Averaged.(ROIs{roi}).SM  = mean(cat(3,Temp{:}),3);
     Signal_Averaged.(ROIs{roi}).STD = std(cat(3,Temp{:}),[],3);
     Signal_Averaged.(ROIs{roi}).Num = ROI_counts(roi);
     Signal_Averaged.(ROIs{roi}).P   = P;
     Signal_Averaged.(ROIs{roi}).SNR   = SNR;
-    clear Temp P SNR;
+    % FFT Data
+    Signal_FFT_Averaged.(ROIs{roi}).SMEvoked  = cat(3,FFT{:});
+    Signal_FFT_Averaged.(ROIs{roi}).SMSpon  = cat(3,AMP{:});
+    Signal_FFT_Averaged.(ROIs{roi}).Num = ROI_counts(roi);
+    Signal_FFT_Averaged.(ROIs{roi}).Freq = F;
+    Signal_FFT_Averaged.(ROIs{roi}).FreqPres = F_Pres;
+    Signal_FFT_Averaged.(ROIs{roi}).SMPres = cat(3,AMP_Pres{:});
+    Signal_FFT_Averaged.(ROIs{roi}).SMPresPhase = cat(3,FFT_Pres{:});
+    clear Temp P SNR FFT;
 end
-save(fullfile(Path,'Fullmodel',['Signal_Averaged' SaveName]),'Signal_Averaged','-v7.3');
+save(fullfile(Path,'Fullmodel',['Signal_Averaged' SaveName]),'Signal_Averaged','Signal_FFT_Averaged','-v7.3');
 
 %% Spectrum estimation
 if SpecEstim
@@ -169,6 +191,63 @@ end
 close all
 %legend(ROIs)
 %% plot the frequency domain results
+FIG1 = figure(1);
+set(FIG1,'color','w','unit','inch','position',[0 0 20 15])
+
+FIG2 = figure(2);
+set(FIG2,'color','w','unit','inch','position',[0 0 20 15]);
+
+for roi = 1:numel(ROIs)
+    FFT_evoked  = squeeze(abs(mean(Signal_FFT_Averaged.(ROIs{roi}).SMEvoked,3)));
+    MEvoked     = max(FFT_evoked(:));
+    mEvoked     = min(FFT_evoked(:));
+    
+    FFT_spon  = squeeze(abs(mean(Signal_FFT_Averaged.(ROIs{roi}).SMSpon,3)));
+    MSpon     = max(FFT_spon(:));
+    mSpon     = min(FFT_spon(:));
+    
+    for i = 1:6
+        figure(1)
+        subplot(6,numel(ROIs),(i-1)*numel(ROIs)+roi)
+        plot(Signal_FFT_Averaged.(ROIs{roi}).Freq,FFT_evoked(i,:,:),'linewidth',1.5,'color',squeeze(Colors(roi,i,:)))
+        xlim([1 80])
+        ylim([mEvoked MEvoked])
+         if i==1
+            title(ROI_names.(ROIs{roi}));
+        end
+        if roi==1
+            ylabel(['L' num2str(i)]);
+        end
+        if (roi==numel(ROIs)) && (i==6)
+            
+            xlabel('Frequency (Hz)');
+        end
+        
+        figure(2)
+        subplot(6,numel(ROIs),(i-1)*numel(ROIs)+roi)
+        plot(Signal_FFT_Averaged.(ROIs{roi}).Freq,FFT_spon(i,:,:),'linewidth',1.5,'color',squeeze(Colors(roi,i,:)))
+        xlim([1 80])
+        ylim([mSpon MSpon])
+        
+        if i==1
+            title(ROI_names.(ROIs{roi}));
+        end
+        if roi==1
+            ylabel(['L' num2str(i)]);
+        end
+        if (roi==numel(ROIs)) && (i==6)
+            
+            xlabel('Frequency (Hz)');
+        end
+    end
+end
+
+if savefig
+    export_fig(FIG1,fullfile(Path,['Signal_Averaged_AllROIs_ASD_Evoked' SaveName]),'-pdf','-d200');
+    export_fig(FIG2,fullfile(Path,['Signal_Averaged_AllROIs_ASD_Spontaneous' SaveName]),'-pdf','-d200');
+end
+close all;
+%% Wavelet results
 if SpecEstim
 %---------------------------------------------------
 Times = Signal_Averaged.(ROIs{roi}).Times*1000;
@@ -261,6 +340,7 @@ if savefig
     export_fig(FIG2,fullfile(Path,['Signal_Averaged_AllROIs_PSD_layers' SaveName]),'-pdf','-d200');
 end
 end
+close all
 
 %% PLOT correlation of signal power with hierarchical scores
 Times = Signal_Averaged.(ROIs{roi}).Times*1000;

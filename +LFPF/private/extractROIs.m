@@ -1,4 +1,4 @@
-function [session, probeinfo_organized] = extractROIs(Data,probeinfo,LayerNames,LayerInfo,Summary,ROIs_all,session,savepath,savename,StimParams,Sessions_ID,Probes_ID)
+function [session, probeinfo_organized] = extractROIs(Data,probeinfo,LayerNames,LayerInfo,Summary,ROIs_all,session,savepath,savename,StimParams,Sessions_ID,Probes_ID,savefig)
     
 
 %% How to reduce LGN and LP
@@ -57,18 +57,20 @@ for r = 1:numel(ROIs_ind)
         
         
         %-----------------------Plot the results-----------------------
-        FIG = figure;
-        plot_lfp_expanded(Data.Y,Data.Times,arrayfun(@(x) ['L' num2str(x)],1:6,'uni',false))
-        title('Original')
+        if savefig
+            FIG = figure;
+            plot_lfp_expanded(Data.Y,Data.Times,arrayfun(@(x) ['L' num2str(x)],1:6,'uni',false))
+            title('Original')
 
-        set(FIG,'unit','inch','position',[5 5 8 4],'color','w')
-        if ~exist(savepath)
-            mkdir(savepath)
+            set(FIG,'unit','inch','position',[5 5 8 4],'color','w')
+            if ~exist(savepath)
+                mkdir(savepath)
+            end
+            export_fig(FIG,fullfile(savepath,[probeinfo.structure_acronyms{ROIs_ind(r)}  savename]),'-pdf');close
+
+            FIG = plot_RFMappings(probeinfo,Layer_ind,Labels);
+            export_fig(FIG,fullfile(savepath,[probeinfo.structure_acronyms{ROIs_ind(r)} '_RFmaps']),'-pdf');close
         end
-        export_fig(FIG,fullfile(savepath,[probeinfo.structure_acronyms{ROIs_ind(r)}  savename]),'-pdf');close
-        
-        FIG = plot_RFMappings(probeinfo,Layer_ind,Labels);
-        export_fig(FIG,fullfile(savepath,[probeinfo.structure_acronyms{ROIs_ind(r)} '_RFmaps']),'-pdf');close
         %--------------------------------------------------------------
     else
     
@@ -116,28 +118,29 @@ for r = 1:numel(ROIs_ind)
             ROInames{p} = probeinfo.structure_acronyms{ROIs_ind(r)};
             p = p+1;
             %-----------------------Plot the results-----------------------
-            FIG = figure;
-            subplot(1,2,1);
-            plot_lfp_expanded(TempData,Data.Times,Summary(labels,:))
-            title('Original')
-            
-            subplot(1,2,2);
-            plot_lfp_expanded(sumData,Data.Times,[])
-            title('PCs')
-            
-            set(FIG,'unit','inch','position',[5 5 15 5],'color','w')
-            if ~exist(savepath)
-                mkdir(savepath)
+            if savefig
+                FIG = figure;
+                subplot(1,2,1);
+                plot_lfp_expanded(TempData,Data.Times,Summary(labels,:))
+                title('Original')
+
+                subplot(1,2,2);
+                plot_lfp_expanded(sumData,Data.Times,[])
+                title('PCs')
+
+                set(FIG,'unit','inch','position',[5 5 15 5],'color','w')
+                if ~exist(savepath)
+                    mkdir(savepath)
+                end
+                export_fig(FIG,fullfile(savepath,[probeinfo.structure_acronyms{ROIs_ind(r)} savename]),'-pdf'); close
+
+                FIG = plot_RFMappings(probeinfo,labels,arrayfun(@num2str,labels,'uni',false));
+                print(fullfile(savepath,[probeinfo.structure_acronyms{ROIs_ind(r)} '_RFmaps']),'-dtiff');
+                export_fig(FIG,fullfile(savepath,[probeinfo.structure_acronyms{ROIs_ind(r)} '_RFmaps']),'-pdf');
+
+                FIG = plot_RFMappings(probeinfo,Layer_ind,arrayfun(@num2str,Layer_ind,'uni',false));
+                export_fig(FIG,fullfile(savepath,[probeinfo.structure_acronyms{ROIs_ind(r)} '_reduced_RFmaps']),'-pdf');
             end
-            export_fig(FIG,fullfile(savepath,[probeinfo.structure_acronyms{ROIs_ind(r)} savename]),'-pdf'); close
-            
-            FIG = plot_RFMappings(probeinfo,labels,arrayfun(@num2str,labels,'uni',false));
-            print(fullfile(savepath,[probeinfo.structure_acronyms{ROIs_ind(r)} '_RFmaps']),'-dtiff');
-            export_fig(FIG,fullfile(savepath,[probeinfo.structure_acronyms{ROIs_ind(r)} '_RFmaps']),'-pdf');
-            
-            FIG = plot_RFMappings(probeinfo,Layer_ind,arrayfun(@num2str,Layer_ind,'uni',false));
-            export_fig(FIG,fullfile(savepath,[probeinfo.structure_acronyms{ROIs_ind(r)} '_reduced_RFmaps']),'-pdf');
-           
             %--------------------------------------------------------------
         end
         
