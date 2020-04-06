@@ -39,7 +39,7 @@ for i = 1:numel(FN)
 end
 Params = strrep(Params,'.','-');
 Params = strrep(Params,' ','-');
-SaveName = ['_' Stimuli '_' Params '_'  opt.PDCMethod '_Mord' num2str(opt.MOrd)];
+SaveName = ['_' Stimuli '_' Params '_'  opt.PDCMethod '_Mord' num2str(opt.MOrd) '_ff0' num2str(opt.ff*100)];
 StimName = ['_' Stimuli '_' Params];
 
 %% for each session and stimuli load the probes data

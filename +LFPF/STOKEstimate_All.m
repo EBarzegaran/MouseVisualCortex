@@ -27,7 +27,7 @@ Y           = cat(2,Y{:});
 % Y = Y./mean(mean(Y,1).^2,3);
 % Y = Y - mean(mean(Y,1),3);
 
-
+%Y = Y ./sqrt(sum(mean(Y,1).^2,3));
 %% APPLY STOK
 % final estimation of FC
 KF          = dynet_SSM_STOK(squeeze(Y),P,ff);

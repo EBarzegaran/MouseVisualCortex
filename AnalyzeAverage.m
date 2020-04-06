@@ -1,6 +1,6 @@
 
 clear; clc;
-FileName = '_dot_motion__Speed0-01--------0-02--------0-04_iPDC_Mord15';%'drifting_gratings_75_repeats__contrast0-8_iPDC_Mord15';
+FileName = 'drifting_gratings_75_repeats__contrast0-1_iPDC_Mord15_ff098';%'_dot_motion__Speed0-01--------0-02--------0-04_iPDC_Mord15';%'drifting_gratings_75_repeats__contrast0-1_iPDC_Mord10';%
 Path = '/Users/elhamb/Documents/Data/AllenBrainObserver/preliminary_results/Averaged/Fullmodel/';
 %%
 addpath(genpath(fileparts(mfilename('fullpath'))));
@@ -12,18 +12,67 @@ Colors = COBJ.MatrixColors(STOK_avg.ROIs);
 load ROInames;
 NROIs = numel(STOK_avg.ROIs);
 %% plot each ROI separately
+
+MODE = 1;
 Time    = STOK_avg.Time;
 Freq    = STOK_avg.Freq;
 PDC     = STOK_avg.PDC;
 PDC     = (PDC - mean(PDC(:,:,:,Time>-.3 & Time<0),4))./mean(PDC(:,:,:,Time>-.3 & Time<0),4);
+if MODE==1
+    TW = [0 2];
+else
+    TW = [.05 .4];
+end
 
 for roi = 1:NROIs
     ind = [(roi-1)*6+1:roi*6];
-    FIG = dynet_connplot(PDC(ind,ind,:,Time>-.2 & Time<1),Time(Time>-.2 & Time<1),Freq,cellfun(@(x) strrep(x,'_','-'),STOK_avg.labels(ind),'uni',false),[],[],[],[],STOK_avg.ROIs{roi});
+    FIG = dynet_connplot(PDC(ind,ind,:,Time>TW(1) & Time<TW(2)),Time(Time>TW(1) & Time<TW(2)),Freq,cellfun(@(x) strrep(x,'_','-'),STOK_avg.labels(ind),'uni',false),[],[],[],1,STOK_avg.ROIs{roi});
     set(FIG,'unit','inch','position',[0,0,20,12],'color','w')
-    export_fig(FIG,fullfile(SavePath,['STOK_individual_sustained_' STOK_avg.ROIs{roi} FileName]),'-pdf'); close; 
+    if MODE==1
+        export_fig(FIG,fullfile(SavePath,['STOK_individual_sustained_' STOK_avg.ROIs{roi} FileName]),'-pdf'); %close; 
+    else
+        export_fig(FIG,fullfile(SavePath,['STOK_individual_transient_' STOK_avg.ROIs{roi} FileName]),'-pdf'); %close; 
+    end
+end
+%% Plot averaged oevr layers of all ROIs connectivity
+
+MODE = 2;
+Time    = STOK_avg.Time;
+Freq    = STOK_avg.Freq;
+PDC     = STOK_avg.PDC;
+PDC     = (PDC - mean(PDC(:,:,:,Time>-.3 & Time<0),4))./mean(PDC(:,:,:,Time>-.3 & Time<0),4);
+if MODE==1
+    TW = [0 2];
+else
+    TW = [.05 .4];
+end
+TimeInd = (Time>TW(1) & Time<TW(2));
+clear PDC_avg;
+for roi = 1:NROIs
+    for roi2 = 1:NROIs
+        Ind = ((roi-1)*6+1):(roi*6);
+        Ind2 = ((roi2-1)*6+1):(roi2*6);
+        PDC_avg(roi,roi2,:,:) = squeeze(sum(sum(PDC(Ind,Ind2,:,TimeInd),1),2)./(numel(Ind)*numel(Ind2)));
+    end
 end
 
+PDC_avg_diff = PDC_avg - permute(PDC_avg,[2 1 3 4]);
+
+FIG1 = dynet_connplot(PDC_avg_diff,Time(TimeInd),Freq,cellfun(@(x) ROI_names.(x), STOK_avg.ROIs,'uni',false),[],[],[],0);
+set(FIG1,'unit','inch','position',[0 0 25 15],'color','w');
+if MODE==1
+    export_fig(FIG1,fullfile(SavePath,['STOK_AllROIs_diff_sustained' FileName]),'-pdf'); close; 
+else
+    export_fig(FIG1,fullfile(SavePath,['STOK_AllROIs_diff_transient' FileName]),'-pdf'); close; 
+end
+
+FIG2 = dynet_connplot(PDC_avg,Time(TimeInd),Freq,cellfun(@(x) ROI_names.(x), STOK_avg.ROIs,'uni',false),[],[],[],1);
+set(FIG2,'unit','inch','position',[0 0 25 15],'color','w');
+if MODE==1
+    export_fig(FIG2,fullfile(SavePath,['STOK_AllROIs_sustained' FileName]),'-pdf'); close; 
+else
+    export_fig(FIG2,fullfile(SavePath,['STOK_AllROIs_transient' FileName]),'-pdf'); close; 
+end
 %% Inter-Intra connectivity
 
 Time    = STOK_avg.Time;

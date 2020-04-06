@@ -53,7 +53,7 @@ if saveresults
     labels = arrayfun(@(y) arrayfun(@(x) [ROIs_Select{y} '_L' num2str(x)],1:ROIsizes(y),'uni',false),1:numel(ROIs_Select),'uni',false);
     labels = cat(2,labels{:});
     STOK_avg.labels  = labels;
-    save(fullfile(Path,'Fullmodel',['STOK_Average_' SaveName]),'STOK_avg');
+    save(fullfile(Path,'Fullmodel',['STOK_Average' SaveName]),'STOK_avg');
     clear STOK_avg;
 end
 %% plot ROI/Layers connectivity matrix

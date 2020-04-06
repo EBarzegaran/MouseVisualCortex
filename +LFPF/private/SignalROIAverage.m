@@ -23,7 +23,7 @@ for roi = 1:numel(ROIs)
             % FFT
             Session.(Sessions_ID{S}).(ROIs{roi}).Y = Session.(Sessions_ID{S}).(ROIs{roi}).Y(:,:,Ind,:);
             Session.(Sessions_ID{S}).(ROIs{roi}).Times = Session.(Sessions_ID{S}).(ROIs{roi}).Times(Ind);
-            [PostStim,PreStim]  =  FFT_estimate(Session.(Sessions_ID{S}).(ROIs{roi}));
+            [PostStim,PreStim]  =  FFT_estimate(Session.(Sessions_ID{S}).(ROIs{roi}),1);
             
             FFT{S} = PostStim.FFT;
             AMP{S} = PostStim.AMP;
@@ -100,7 +100,7 @@ COBJ = LFPF.RColors();
 Colors = COBJ.MatrixColors(ROIs,'SubColors');
 %---------------------------------------------------
 Times = Signal_Averaged.(ROIs{roi}).Times*1000;
-Xticks = arrayfun(@(x) find(round(Signal_Averaged.(ROIs{roi}).Times,2)*1000==x,1),[ 0:200:1000]);
+Xticks = arrayfun(@(x) find(round(Signal_Averaged.(ROIs{roi}).Times,2)*1000==x,1),[ 0:50:1000])+1;
 
 Yticks = arrayfun(@(x) ['L' num2str(x)],1:6,'uni',false);
 %--------------------------------------------------
@@ -133,7 +133,9 @@ for roi = 1:numel(ROIs)
         LG(l)=plot(Signal_Averaged.(ROIs{roi}).Times*1000,Signal(l,:)-Offset*l,'linewidth',1.5,'color',Colors(roi,l,:));
         MS(l) = mean(Signal(l,:)-Offset*l);
     end
-    xlim([-100 1001])
+    %xlim([-100 1001])
+    xlim([40 401])
+    
     %title([ROI_names.(ROIs{roi}) ' - Averaged over ' num2str(Signal_Averaged.(ROIs{roi}).Num) ' sessions'])
     title(ROI_names.(ROIs{roi}));
     
@@ -144,6 +146,7 @@ for roi = 1:numel(ROIs)
         %set(gca,'ytick',MS(end:-1:1),'yticklabel',[]);
     end
     vline(0.0,'k--')
+    grid on;
   
     set(gca,'ytick',MS(end:-1:1),'yticklabel',Yticks(end:-1:1),'xtick',Times(Xticks),'xticklabel',round(Times(Xticks)),'fontsize',15);
     %set(gca,'position',get(gca,'position')+[0 0 0 0.02])
@@ -156,7 +159,7 @@ end
 
 set(FIG,'color','w','unit','inch','position',[0 0 4 16])
 if savefig
-    export_fig(FIG,fullfile(Path,['Signal_Averaged_AllROIs' SaveName]),'-pdf','-r200');
+    export_fig(FIG,fullfile(Path,['Signal_Averaged_AllROIs_transient' SaveName]),'-pdf','-r200');
 end
 
 %% plot the time domain results
@@ -246,7 +249,7 @@ if savefig
     export_fig(FIG1,fullfile(Path,['Signal_Averaged_AllROIs_ASD_Evoked' SaveName]),'-pdf','-d200');
     export_fig(FIG2,fullfile(Path,['Signal_Averaged_AllROIs_ASD_Spontaneous' SaveName]),'-pdf','-d200');
 end
-close all;
+% close all;
 %% Wavelet results
 if SpecEstim
 %---------------------------------------------------
@@ -256,36 +259,39 @@ Xticks = arrayfun(@(x) find(round(Signal_Averaged.(ROIs{roi}).Times,2)*1000==x,1
 FIG = figure(1);
 set(FIG,'color','w','unit','inch','position',[0 0 10 12])
 
- FIG2 = figure(2);
- set(FIG2,'color','w','unit','inch','position',[0 0 25 20]);
+if false
+    FIG2 = figure(2);
+    set(FIG2,'color','w','unit','inch','position',[0 0 25 20]);
+end
 %WaveletPSD = cellfun(@(y) cellfun(@(x) x(:,:,1:376),WaveletPSD.(y),'uni',false),fieldnames(WaveletPSD));
 
 WaveletPSD2 = cellfun(@(x) mean((cat(4,WaveletPSD.(x){:})),4),ROIs,'uni',false);
 
 MWav = max(max(mean(abs(WaveletPSD2{1}))));
 for roi = 1:numel(ROIs)
-    figure(2);
-    WW = WaveletPSD2{roi};
-    WW2 = log10(abs(mean(WaveletPSD2{roi}(:,:,t<0 & t>-.3),3)));
-    for i = 1:6
-        subplot(6,numel(ROIs),(i-1)*numel(ROIs)+roi)
-        plot(log10(Freqs),(log10(abs(squeeze(mean((WW(i,:,t>0)),3))))-squeeze(WW2(i,:))),'k','linewidth',1.5);
-        %ylim([0 max(WW(:))*.8])
-        ylim([-.2 1])
-        xlim([0 log10(100)])
-        set(gca,'xtick', log10(Freqs([1 5 10 20 30 50 100])),'xticklabel',Freqs([1 5 10 20 30 50 100]))
-        if i==1
-            title(ROI_names.(ROIs{roi}));
-        end
-        if roi==1
-            ylabel(['L' num2str(i)]);
-        end
-        if (roi==numel(ROIs)) && (i==6)
-            xlabel('Time (Sec)');
-            ylabel('Frequency (Hz)');
+    if false
+        figure(2);
+        WW = WaveletPSD2{roi};
+        WW2 = log10(abs(mean(WaveletPSD2{roi}(:,:,t<0 & t>-.3),3)));
+        for i = 1:6
+            subplot(6,numel(ROIs),(i-1)*numel(ROIs)+roi)
+            plot(log10(Freqs),(log10(abs(squeeze(mean((WW(i,:,t>0)),3))))-squeeze(WW2(i,:))),'k','linewidth',1.5);
+            %ylim([0 max(WW(:))*.8])
+            ylim([-.2 1])
+            xlim([0 log10(100)])
+            set(gca,'xtick', log10(Freqs([1 5 10 20 30 50 100])),'xticklabel',Freqs([1 5 10 20 30 50 100]))
+            if i==1
+                title(ROI_names.(ROIs{roi}));
+            end
+            if roi==1
+                ylabel(['L' num2str(i)]);
+            end
+            if (roi==numel(ROIs)) && (i==6)
+                xlabel('Time (Sec)');
+                ylabel('Frequency (Hz)');
+            end
         end
     end
-    
     
 
     figure(1)
@@ -294,7 +300,9 @@ for roi = 1:numel(ROIs)
     contourf(t(~isnan(t)),log10(Freqs(Freqs>2)),10*log10(BRWV(Freqs>2,~isnan(t))),100,'linecolor','none');
     caxis([-12 -8]*10);
     set(gca,'ytick',log10([5 10 20 30 50 100]),'yticklabel',[5 10 20 30 50 100])
-    xlim([-.2 1]);
+    %xlim([-.2 1]);
+    xlim([.02 .4]);
+    
     vline(0,'k--');
     if roi ==numel(ROIs)
         xlabel('Time (Sec)');
@@ -316,7 +324,8 @@ for roi = 1:numel(ROIs)
     end
     caxis([0 MMax]);
     %set(gca,'ytick',[5 10 20 30 50 100],'yticklabel',[5 10 20 30 50 100])
-    xlim([-.2 1]);
+    %xlim([-.2 1]);
+    xlim([.02 .4]);
     vline(0,'k--');
     if roi ==numel(ROIs)
         xlabel('Time (Sec)');
@@ -335,12 +344,12 @@ end
 colormap('jet')
 
 if savefig
-    %export_fig(FIG,fullfile(Path,['Signal_Averaged_AllROIs_PSD' SaveName]),'-pdf','-d200');
-    export_fig(FIG,fullfile(Path,['Signal_Averaged_AllROIs_PSD' SaveName]),'-pdf','-d200');
-    export_fig(FIG2,fullfile(Path,['Signal_Averaged_AllROIs_PSD_layers' SaveName]),'-pdf','-d200');
+    
+    export_fig(FIG,fullfile(Path,['Signal_Averaged_AllROIs_PSD_transient' SaveName]),'-pdf','-d200');
+    %export_fig(FIG2,fullfile(Path,['Signal_Averaged_AllROIs_PSD_layers' SaveName]),'-pdf','-d200');
 end
 end
-close all
+%close all
 
 %% PLOT correlation of signal power with hierarchical scores
 Times = Signal_Averaged.(ROIs{roi}).Times*1000;
