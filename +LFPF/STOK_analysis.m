@@ -137,12 +137,13 @@ if ~exist(fullfile(ProjectPath,'Averaged','Fullmodel',['STOK_ALL' SaveName '.mat
 
         %% Estimate STOK over all ROIs
          tic
-               [Temp.PDC,Temp.f,Temp.Times,Temp.ROIs] = LFPF.STOKEstimate_All(session.(['S' Sessions_ID{S}]),opt.MOrd, opt.ff,opt.PDCMethod,opt.ROIs,opt.Freqs);
-               StokALL.(['S' Sessions_ID{S}]) = Temp;
+           [Temp.PDC,Temp.f,Temp.Times,Temp.ROIs,Temp.KF] = LFPF.STOKEstimate_All(session.(['S' Sessions_ID{S}]),opt.MOrd, opt.ff,opt.PDCMethod,opt.ROIs,opt.Freqs);
+           StokALL.(['S' Sessions_ID{S}]) = Temp;
                
                
 %                [~,Temp.f,Temp.Times,Temp.ROIs,Temp.KF] = LFPF.STOKEstimate_All(session.(['S' Sessions_ID{S}]),opt.MOrd, opt.ff,opt.PDCMethod,opt.ROIs,opt.Freqs,false);
-%                AR_ALL.(['S' Sessions_ID{S}]) = Temp;
+            Temp = rmfield(Temp,'PDC');
+            AR_ALL.(['S' Sessions_ID{S}]) = Temp;
          toc
 
     end
@@ -150,7 +151,7 @@ if ~exist(fullfile(ProjectPath,'Averaged','Fullmodel',['STOK_ALL' SaveName '.mat
     save(fullfile(ProjectPath,'Averaged','Fullmodel',['STOK_ALL' SaveName]),'StokALL','-v7.3');
     save(fullfile(ProjectPath,'Averaged','Fullmodel',['SessionSignal'  StimName]),'session','-v7.3');
     save(fullfile(ProjectPath,'Averaged','Fullmodel',['Probe_Data_All']),'Probe_all');
-    %save(fullfile(ProjectPath,'Averaged','Fullmodel',['AR_ALL' SaveName]),'AR_ALL','-v7.3');
+    save(fullfile(ProjectPath,'Averaged','Fullmodel',['AR_ALL' SaveName]),'AR_ALL','-v7.3');
 else
     load(fullfile(ProjectPath,'Averaged','Fullmodel',['SessionSignal' StimName]));
     load(fullfile(ProjectPath,'Averaged','Fullmodel',['STOK_ALL' SaveName]));

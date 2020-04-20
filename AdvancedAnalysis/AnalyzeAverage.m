@@ -1,6 +1,6 @@
 
 clear; clc;
-FileName = 'drifting_gratings_75_repeats__contrast0-1_iPDC_Mord15_ff098';%'_dot_motion__Speed0-01--------0-02--------0-04_iPDC_Mord15';%'drifting_gratings_75_repeats__contrast0-1_iPDC_Mord10';%
+FileName = 'drifting_gratings_75_repeats__contrast0-8_iPDC_Mord15_ff098';%'_dot_motion__Speed0-01--------0-02--------0-04_iPDC_Mord15';%'drifting_gratings_75_repeats__contrast0-1_iPDC_Mord10';%
 Path = '/Users/elhamb/Documents/Data/AllenBrainObserver/preliminary_results/Averaged/Fullmodel/';
 %%
 addpath(genpath(fileparts(mfilename('fullpath'))));
@@ -36,7 +36,7 @@ for roi = 1:NROIs
 end
 %% Plot averaged oevr layers of all ROIs connectivity
 
-MODE = 2;
+MODE = 1;
 Time    = STOK_avg.Time;
 Freq    = STOK_avg.Freq;
 PDC     = STOK_avg.PDC;
