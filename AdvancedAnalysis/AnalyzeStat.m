@@ -1,8 +1,9 @@
-clear;clc;
+%clear;clc;
 
 addpath(genpath(fileparts(mfilename('fullpath'))));
+addpath(genpath(fileparts(fileparts(mfilename('fullpath')))));
 clear; clc;
-FileName = 'dot_motion__Speed0-01--------0-02--------0-04_iPDC_Mord15';%'drifting_gratings_75_repeats__contrast0-1_iPDC_Mord15';
+FileName = 'drifting_gratings_75_repeats__contrast0-8_iPDC_Mord15_ff098';
 Path = '/Users/elhamb/Documents/Data/AllenBrainObserver/preliminary_results/Averaged/Fullmodel/';
 %%
 load(fullfile(Path, ['STOK_ALL_' FileName '.mat']));
@@ -107,6 +108,40 @@ end
 for roi = 2:nROIs-1
     CompPDCCells(PDC_change(roi+1:nROIs,roi),PDC_change(1:roi-1,roi),[1],false,1,[0 0],Time,Freq,['Output-(FF vs. FB)- ' ROIs{roi} '_' FileName],FigPath);
 end
+
+%% Permutation FF FB
+Stat_origin = CompPDCCells(PDCFF,PDCFB,[1 2],false,1,[0 0],Time,Freq,['Output-Averaged-(FF vs. FB)- All_' FileName],FigPath,true);
+
+PDCPulled = cat(2,PDCFF,PDCFB);
+PDCPulled = cat(5,PDCPulled{:});
+NPerm = 500;
+for perm = 1:NPerm
+    perm
+    cndnum = size(PDCPulled,5);
+    Ind1 = randsample(cndnum,cndnum/2);
+    Ind2 = setdiff([1:cndnum]',Ind1);
+    Stat = CompPDCCells({PDCPulled(:,:,:,:,Ind1)},{PDCPulled(:,:,:,:,Ind2)},[1 2],false,false,[0 0],Time,Freq,['Output-Averaged-(FF vs. FB)- All_' FileName],FigPath,false);
+    CS_perm{perm} = Stat.ClusterSize;
+end
+
+Rnd_dist = cellfun(@(x) x(1),CS_perm);
+P_val = arrayfun(@(x) sum(x<abs(Rnd_dist))./numel(Rnd_dist),abs(Stat_origin.ClusterSize));
+%save([FileName '_permutetest_FFFB'],'CS_perm','Stat_origin')
+% make a plot for the first three clusters
+Ind = [Stat_origin.Cluters{1}; Stat_origin.Cluters{2} ];
+Alpha = zeros(size(PDCPulled,3),size(PDCPulled,4));
+Alpha(Ind) = 1;
+imagesc(Alpha) 
+FIG = PlotStatresults(permute(1-Alpha,[3 4 1 2]),Stat_origin.Tval,...
+            1, Time, Freq,...
+            'figpath'   ,FigPath,...
+            'figtitle'  ,['Output-Averaged-(FF vs. FB)- permutation_' FileName],...
+            'Pthresh'   ,.01,...
+            'SThresh'   ,8,...
+            'Twin'      ,[0 1],...
+            'Labels'    ,{' '},...
+            'ColorM'    ,'jet'...
+            );
 
 %% In this part, I use two-way anova to compare inter-intra , pre-post PDC values
 

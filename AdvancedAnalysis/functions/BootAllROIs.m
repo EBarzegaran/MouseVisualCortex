@@ -11,8 +11,12 @@ end
 
 for b = 1:nboots
     sample_temp = randi(numel(IDs),1,bootsize);
-    while sum(sum(ROIind(sample_temp,:),1)>0)==numel(IDs)
+    conn = arrayfun(@(x) ROIind(x,:)'*ROIind(x,:),sample_temp,'uni',false);
+    conn = sum(cat(3,conn{:}),3);
+    while sum(conn(:)==0)~=0
         sample_temp = randi(numel(IDs),1,bootsize);
+        conn = arrayfun(@(x) ROIind(x,:)'*ROIind(x,:),sample_temp,'uni',false);
+        conn = sum(cat(3,conn{:}),3);
     end
     boot_idx(b,:) = sample_temp;
 end

@@ -13,4 +13,4 @@ ProjectPath = '/Users/elhamb/Documents/Data/AllenBrainObserver/preliminary_resul
 %%
 Sessions_subset = {'766640955','767871931','768515987','771160300','771990200','774875821','778240327','778998620','779839471','781842082','821695405'};
 
-Visualize.VisualizeProbes(ProjectPath,Sessions_subset)
+VisualizeProbes(ProjectPath,Sessions_subset)

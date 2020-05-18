@@ -54,18 +54,19 @@ if numel(pd)==1 % averaged over a dimension
         set(gca,'xtick',Xticks,'xticklabel',Xticklabels*1000,'ytick',Yticks,'yticklabel',Yticklabels,'fontsize',16);
         if i==size(Tval,pd)
             ylabel('Frequency (Hz)');
-            xlabel('Time (S)');
+            xlabel('Time (msec)');
             ps = get(gca,'position');
 %             cb = colorbar;
 %             set(gca,'position',ps);
 %             set(cb,'position',get(cb,'position')+[-.05 0 0 0])
 %             set(get(cb,'title'),'string','T-Statistics');
         end
+        colorbar
 
     end
     dims = size(P);
     dims = sort(dims(1:2));
-    set(FIG,'unit','inch','position',[1 1 dims(1)*5 dims(2)*3.5],'color','w');
+    set(FIG,'unit','inch','position',[1 1 dims(1)*9 dims(2)*3.5],'color','w');
 %-----------------------PLOT AVERAGED RESULTS-----------------------------        
 elseif numel(pd)==0
     h = imagesc(squeeze(Tval(:,:,:,:,:)));
@@ -82,7 +83,7 @@ elseif numel(pd)==0
     set(gca,'fontsize',16)
     dims = size(P);
     dims = sort(dims(1:2));
-    set(FIG,'unit','inch','position',[1 1 dims(1)*9 dims(2)*3.5],'color','w');
+    set(FIG,'unit','inch','position',[1 1 dims(1)*8 dims(2)*3.5],'color','w');
 %-----------------------PLOT NON AVERAGED RESULTS-------------------------       
 elseif numel(pd)==2
     for i = 1:size(Tval,1)

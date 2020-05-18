@@ -5,7 +5,7 @@ rmpath(genpath('/Users/elhamb/Documents/Codes/Git/EEGSourceSim/External/eeglab14
 FigPath = '';
 
 %% design network
-Net1 = BrainNetSim(3,100,.96);
+Net1 = BrainNetSim(3,100,.9);
 Net1 = Net1.AddNode('AR');
 % define net dynamics
 NS = 100; % length of simulation: time points
@@ -32,7 +32,7 @@ export_fig('Simulation_STOK_un','-pdf')
 %%
 % Add connections to the network
 Net1 = Net1.AddConnection([1 2],'Type','bandpass','LF',5,'HF',15,'Order',6,'Gain',1/5);
-Net1 = Net1.AddConnection([2 3],'Type','bandpass','LF',5,'Order',6,'Gain',1/5);
+Net1 = Net1.AddConnection([2 3],'Type','bandpass','HF',7,'Order',6,'Gain',1/5);
 Net1 = Net1.AddConnection([3 4],'Type','high','HF',7,'Gain',1/5);
 %Net1 = Net1.AddConnection([1 4],'Type','delay','Order',5,'Gain',1/5);
 

@@ -1,5 +1,5 @@
-clear;
-clc;
+% clear;
+% clc;
 
 %% Add required repos and set the project path, where to read the data
 addpath(genpath('/Users/elhamb/Documents/Codes/NonGit/'))
@@ -15,7 +15,7 @@ Animal_List = {'766640955','767871931','768515987','771160300','771990200','7748
 
 % in case of grating condition
 Condition = 'drifting_gratings_75_repeats';
-StimParams.contrast = .8;
+StimParams.contrast = .1;
 %StimParams.orientation = [90 45];
 
 %Condition = 'dot_motion';
@@ -26,7 +26,7 @@ LFPF.STOK_analysis(ProjectPath,Condition,...
     'StimParams'         ,StimParams,...
     'ReReadData'        ,true,...% not necessary to set to true everytime you run the code
     'ParamEstimate'     ,false,...% not really necessary -> not efficient
-    'MOrd'              ,8,...
+    'MOrd'              ,15,...
     'ff'                ,.98,...
     'Freqs'             ,1:100,...
     'ROIs'              ,{'VISp','VISl','VISrl','VISal','VISpm','VISam'},...%{'VISp','VISl','VISrl','VISal','VISpm','VISam'},...%

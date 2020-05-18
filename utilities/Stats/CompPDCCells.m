@@ -94,22 +94,26 @@ if ~(prefactor)
             end
         end
     end
-    
     %------------------(4) next step for this simple test is to implement a
     %cluster-based statistics --- NOT IMPLEMENTED YET
     Stats.P = P;
     Stats.CI = ci;
     Stats.Tval = Tval;
-
+    %--------------------(5) Extract clusters------------------------------
+    [CS,Clusters] = findclust(P,Tval,.05);
+    Stats.ClusterSize = CS;
+    Stats.Cluters = Clusters;
     %---------------------------plot the results---------------------------
     if plotresults
         FIG = PlotStatresults(P,Tval,avdims, time, freq,...
         'figtitle'  ,figtitle,...
         'figpath'   ,figpath,...
-        'PThresh'   ,0.05,...
-        'SThresh'   ,7,...
+        'PThresh'   ,0.001,...
+        'SThresh'   ,15,...
         'Twin'      ,[0 1],...
         'ColorM'    ,'jet');
+    else
+        FIG=[];
     end
 else
 %% %% if additional factor is needed, then I should use anova and linear mixed model, with a within-group factor (pre-post) and between-group factor (PDC1 and PDC2)
@@ -166,6 +170,8 @@ else
             'Labels'    ,lme.anova.Term,...
             'ColorM'    ,'jet'...
             );
+    else
+        FIG = [];
     end
 
 end
