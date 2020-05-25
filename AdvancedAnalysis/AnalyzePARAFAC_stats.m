@@ -7,6 +7,7 @@ Path = '/Users/elhamb/Documents/Data/AllenBrainObserver/preliminary_results/Aver
 load(fullfile(Path, ['STOK_ALL_' FileName '.mat']));
 SavePath = Path;
 FigPath = fullfile(Path,'StatResults','PARAFAC');
+
 %% Organize PDC values for statistics
 ROIs = {'VISp','VISl','VISrl','VISal','VISpm','VISam'};
 COBJ = LFPF.RColors();
@@ -23,7 +24,7 @@ nboots = 100;
 bootsize = 7;
 BootIDs = BootAllROIs(IDs, ROIsPerID, ROIs, nboots, bootsize);
 
-    
+NComp = 5;
 
 for b = 1:nboots
     clear Stok_sample;
@@ -53,14 +54,15 @@ for b = 1:nboots
     PDCPulled = cat(2,PDCFFtemp,PDCFBtemp);
     PDCPulled = cat(5,PDCPulled{:});
     indTotal = [indFF indFB];
-
-    NComp = 5;
+    
     TW = Time>-0.5 & Time<1;
-    [model{b}]=parafac(permute(PDCPulled(:,:,:,TW,:),[5 1 2 3 4]),NComp,[0 0 0 0 0],[2 2 2 2 2]);% dimensions: connections x in x out x freq x time
+    [model_temp,it(b),err(b),corcondia(b)]=parafac(permute(PDCPulled(:,:,:,TW,:),[4 1 2 3 5]),NComp,[0 0 0 0 0],[2 2 2 2 2]);% dimensions: connections x in x out x freq x time
+    model{b} = model_temp([5 2 3 4 1]);
     temp_time = Time(TW);
 end
-save([FileName 'PARAFAC_temp'],'model','NComp','temp_time','BootIDs','ROIs','IDs','Freq','indTotal')
-load([FileName 'PARAFAC_temp.mat'])
+save([FileName 'PARAFAC_covtemp_' num2str(NComp)],'model','NComp','temp_time','BootIDs','nboots','ROIs','IDs','Freq','indTotal','it','err','corcondia')
+load([FileName 'PARAFAC_covtemp_' num2str(NComp)])
+
 %% cluster the components  500 x 500 similarity
 % for example here I calculate correlation for the first mode : this does
 % not work
@@ -81,8 +83,31 @@ Corrsref = squeeze(Corrs(RefInd,:,:));
 for i = 1:nboots
     [~,sscore_reord(i),Corrs_reord(i,:),Model_reord{i}] = PARAFACmodelComp(model{RefInd},model{i});
 end
+%% how much of variance are explained byy each component
+%[1 4 3 2 5];
 
-%% if you want to check the components' stability, you should use the non-ordered ones: corrs and maps
+clear Model_vars;
+for y = 1:5
+    Model_vars{y} = cellfun(@(x) norm(x{5}(:,y)),Model_reord);
+end
+
+
+
+Model_vars=cat(1,Model_vars{:})';
+Model_var_percent = Model_vars./sum(Model_vars,2);
+
+[~,Comp_ord] = sort(mean(Model_var_percent),'descend');%[1 3 5 2 4];
+
+FIG = figure;
+set(FIG,'unit','inch','position',[0 0 2*NComp 4],'color','w')
+bar(1:5,mean(Model_var_percent(:,Comp_ord)),.5);hold on;
+errorbar(1:NComp,mean(Model_var_percent(:,Comp_ord)),var(Model_var_percent(:,Comp_ord)),'.','color','k')
+xlabel('Component');
+ylabel('Variance explained')
+xlim([.5 5.5])
+export_fig(FIG,fullfile(FigPath,[FileName '_PARAFAC_N' num2str(NComp) '_VarianceExplained']),'-pdf','-r200')
+
+%% if you want to check the components' Consistency, you should use the non-ordered ones: corrs and maps
 
 % (1) Everything according to the reference bootstrap
 for i = 1:nboots
@@ -96,7 +121,6 @@ end
 
 Comp_PerSig = squeeze(sum(reshape(CorrPvals_reord2,nboots*nboots,5,5)<.05)/(nboots.^2));
 
-Comp_ord = [1 4 3 2 5];
 
 FIG = figure;
 set(FIG,'unit','inch','position',[0 0 2*NComp 4],'color','w')
@@ -115,7 +139,6 @@ export_fig(FIG,fullfile(FigPath,[FileName '_PARAFAC_N' num2str(NComp) 'Consisten
 Freq = 1:100;
 model_reord =   cat(1,Model_reord{:});
 %
-Comp_ord = [1 4 3 2 5];
 for id = RefInd%numel(IDs)
     FIG = figure;
     set(FIG,'unit','inch','position',[0 0 3.5*NComp 10],'color','w')
@@ -152,7 +175,7 @@ for id = RefInd%numel(IDs)
         h = fill([temp_time flip(temp_time)],[M+model_temp_S{5}(:,cc); flip(M-model_temp_S{5}(:,cc))]','b','edgecolor','none');
         set(h,'facealpha',.5)
         plot(temp_time,M,'linewidth',1.5,'color','k')
-        ylim([0 .1])
+        %ylim([0 .1])
         xlim([-.2 1])
         hline(0,'k--')
         if c==1
@@ -229,7 +252,7 @@ for c = 1:NComp
         ylabel('% change')
     end
     set(TP,'position',get(TP,'position')+[-.11+(.017*c) 0 .02 0]);
-    ylim([0 .1])
+   % ylim([0 .1])
 
     % PLOT FREQUENCY DISTRIBUTION
     TP = subplot(4,NComp,(c-1)+NComp*2+1);
@@ -260,3 +283,73 @@ for c = 1:NComp
 end
 
 export_fig(FIG,fullfile(FigPath,[FileName '_PARAFAC_N' num2str(NComp) '_Bootstrap_mean']),'-pdf','-r200')
+%% Taking the data back to data space to compare temporal dynamics in four frequency bands
+Compcolors = [1 0 0; .5 0 0; .7 .4 .3;.3 .4 .7; 0 0 1];
+
+Fbins =[0 5;5 10; 10 20; 20 100];
+FIG = figure;
+set(FIG,'unit','inch','position',[0 0 10 5],'color','w');
+hold on;
+
+cc= Comp_ord;%[1 3 2 5 4];
+
+    
+MT = cellfun(@(x) (x{5}),Model_reord,'uni',false);
+MT = permute(cat(3,MT{:}),[3 2 1]);
+
+
+for l = NComp:-1:1
+    M = squeeze(mean(MT(:,cc(l),:)))';
+    subp(l) = plot(temp_time  ,squeeze(mean(MT(:,cc(l),:)))','linewidth',1.5,'color',Compcolors(l,:));
+    S = squeeze(std(MT(:,cc(l),:)))'./sqrt(nboots);
+    h = fill([temp_time flip(temp_time)],[M+S flip(M-S)],Compcolors(l,:),'edgecolor','none');
+    set(h,'facealpha',.3)
+end
+legend(subp,{'C1','C2','C3','C4','C5'})
+
+xlim([-.3 1])
+vline(0,'k--')
+xlabel('Time (S)')
+ylabel('Component Amplitude');
+set(gca,'fontsize',14)
+export_fig(FIG,fullfile(FigPath,[FileName '_PARAFAC_N' num2str(NComp) '_TemporalDynamics']),'-pdf','-r200')
+
+%% Now indicate the significant evoked components
+% compare clusters with average prestim data...
+
+FIG = figure;
+set(FIG,'unit','inch','position',[0 0 10 15],'color','w');
+
+pre_win = find(temp_time<0.0 & temp_time>-0.2);
+
+for c = 1:NComp
+    subplot(NComp,1,c); hold on;
+    comp = Comp_ord(c);
+    Pres = MT(:,comp,pre_win);   
+    
+    for t = find(temp_time>-0.3)
+        %[~,PVal(t,c),~,stat_temp] = ttest(MT(:,comp,t),mean(MT(:,comp,pre_win)));
+        [~,PVal(t,c),~,stat_temp] = ttest2(MT(:,comp,t),Pres(:));
+        Tstat(t,c) = stat_temp.tstat;
+    end
+    
+     M = squeeze(mean(MT(:,comp,:)))';
+     S = squeeze(std(MT(:,comp,:)))'./sqrt(nboots);
+     minY = min(M-S);
+     maxY = max(M+S);
+    % plot the significant results as shaded
+    SigRes = find(PVal(:,c)<.01);
+    plot(temp_time(SigRes),repmat(maxY*1.1,[1 size(SigRes,1)]),'.','color','k','linewidth',2)
+    
+    % The average temporal loading
+    subp(c) = plot(temp_time  ,squeeze(mean(MT(:,comp,:)))','linewidth',1.5,'color',Compcolors(c,:));
+    h = fill([temp_time flip(temp_time)],[M+S flip(M-S)],Compcolors(c,:),'edgecolor','none');
+    set(h,'facealpha',.3)
+    
+    xlim([-0.2 1])
+end
+
+% H = imagesc(temp_time,[],Tstat');
+% set(H,'alphadata',(PVal'<(0.01)*.7)+.3)
+% colormap(jmaColors('coolhotcortex'));
+% caxis([-20 20])
