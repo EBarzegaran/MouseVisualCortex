@@ -21,10 +21,10 @@ IDs = fieldnames(StokALL);
 % bootstrap
 ROIsPerID = cellfun(@(x) StokALL.(x).ROIs,IDs,'uni',false);
 nboots = 100;
-bootsize = 7;
+bootsize = 8;
 BootIDs = BootAllROIs(IDs, ROIsPerID, ROIs, nboots, bootsize);
 
-NComp = 5;
+NComp = 4;
 
 for b = 1:nboots
     clear Stok_sample;
@@ -56,7 +56,8 @@ for b = 1:nboots
     indTotal = [indFF indFB];
     
     TW = Time>-0.5 & Time<1;
-    [model_temp,it(b),err(b),corcondia(b)]=parafac(permute(PDCPulled(:,:,:,TW,:),[4 1 2 3 5]),NComp,[0 0 0 0 0],[2 2 2 2 2]);% dimensions: connections x in x out x freq x time
+    %[ssX,Corco,It] = pftest(5,permute(PDCPulled(:,:,:,TW,:),[4 1 2 3 5]),4,[2 2 2 0 0]);
+    [model_temp,it(b),err(b),corcondia(b)]=parafac(permute(PDCPulled(:,:,:,TW,:),[4 1 2 3 5]),NComp,[0 1 0 0 NaN],[2 2 2 2 2]);% dimensions: connections x in x out x freq x time
     model{b} = model_temp([5 2 3 4 1]);
     temp_time = Time(TW);
 end
@@ -70,12 +71,10 @@ load([FileName 'PARAFAC_covtemp_' num2str(NComp)])
 % We have different modes of data ...
 for i = 1:nboots
     for j = 1:nboots
-        [maps(i,j,:),sscore(i,j),Corrs(i,j,:),~,CorrPvals(i,j,:,:)] = PARAFACmodelComp(model{i},model{j});
+        [maps(i,j,:),sscore(i,j),Corrs(i,j,:),~,CorrPvals(i,j,:,:),Corrvals(i,j,:,:)] = PARAFACmodelComp(model{i},model{j});
     end
 end
 
-% sscore(100,100)=0;
-% sscore = max(sscore,sscore');
 [~,RefInd] = max(mean(sscore)); % find the reference bootstrap
 Corrsref = squeeze(Corrs(RefInd,:,:));
 
@@ -83,11 +82,12 @@ Corrsref = squeeze(Corrs(RefInd,:,:));
 for i = 1:nboots
     [~,sscore_reord(i),Corrs_reord(i,:),Model_reord{i}] = PARAFACmodelComp(model{RefInd},model{i});
 end
-%% how much of variance are explained byy each component
+
+%% how much of variance are explained by each component
 %[1 4 3 2 5];
 
 clear Model_vars;
-for y = 1:5
+for y = 1:NComp
     Model_vars{y} = cellfun(@(x) norm(x{5}(:,y)),Model_reord);
 end
 
@@ -100,11 +100,11 @@ Model_var_percent = Model_vars./sum(Model_vars,2);
 
 FIG = figure;
 set(FIG,'unit','inch','position',[0 0 2*NComp 4],'color','w')
-bar(1:5,mean(Model_var_percent(:,Comp_ord)),.5);hold on;
+bar(1:NComp,mean(Model_var_percent(:,Comp_ord)),.5);hold on;
 errorbar(1:NComp,mean(Model_var_percent(:,Comp_ord)),var(Model_var_percent(:,Comp_ord)),'.','color','k')
 xlabel('Component');
 ylabel('Variance explained')
-xlim([.5 5.5])
+xlim([.5 NComp+.5])
 export_fig(FIG,fullfile(FigPath,[FileName '_PARAFAC_N' num2str(NComp) '_VarianceExplained']),'-pdf','-r200')
 
 %% if you want to check the components' Consistency, you should use the non-ordered ones: corrs and maps
@@ -119,14 +119,14 @@ for i = 1:nboots
     end
 end
 
-Comp_PerSig = squeeze(sum(reshape(CorrPvals_reord2,nboots*nboots,5,5)<.05)/(nboots.^2));
+Comp_PerSig = squeeze(sum(reshape(CorrPvals_reord2,nboots*nboots,NComp,5)<.05)/(nboots.^2));
 
 
 FIG = figure;
 set(FIG,'unit','inch','position',[0 0 2*NComp 4],'color','w')
-bar(1:5,mean(reshape(Corrs_reord2(:,:,Comp_ord),nboots*nboots,5)),.5);hold on;
-errorbar(1:NComp,mean(reshape(Corrs_reord2(:,:,Comp_ord),nboots*nboots,5)),var(reshape(Corrs_reord2(:,:,Comp_ord),nboots*nboots,5)),'.','color','k')
-xlim([.5 5.5])
+bar(1:NComp,mean(reshape(Corrs_reord2(:,:,Comp_ord),nboots*nboots,NComp)),.5);hold on;
+errorbar(1:NComp,mean(reshape(Corrs_reord2(:,:,Comp_ord),nboots*nboots,NComp)),var(reshape(Corrs_reord2(:,:,Comp_ord),nboots*nboots,NComp)),'.','color','k')
+xlim([.5 NComp+.5])
 ylim([0.0 1.2])
 xlabel('Component');
 ylabel('Average inter boostrap Correlations')
@@ -295,14 +295,26 @@ cc= Comp_ord;%[1 3 2 5 4];
 
     
 MT = cellfun(@(x) (x{5}),Model_reord,'uni',false);
-MT = permute(cat(3,MT{:}),[3 2 1]);
+MT = permute(cat(3,MT{:}),[3 2 1]); 
 
+clear M S;
 
 for l = NComp:-1:1
-    M = squeeze(mean(MT(:,cc(l),:)))';
-    subp(l) = plot(temp_time  ,squeeze(mean(MT(:,cc(l),:)))','linewidth',1.5,'color',Compcolors(l,:));
-    S = squeeze(std(MT(:,cc(l),:)))'./sqrt(nboots);
+    CIu = squeeze(quantile(MT(:,cc(l),:),.95,1));
+    CId = squeeze(quantile(MT(:,cc(l),:),.05,1));
+    MTT = (squeeze(MT(:,cc(l),:))>repmat(CId',[nboots,1])) & (squeeze(MT(:,cc(l),:))<repmat(CIu',[nboots,1]));
+    MTS = squeeze(MT(:,cc(l),:));
+    for t = 1:size(MTS,2)
+        M(t) = squeeze(mean(MTS(MTT(:,t),t)))';
+    end
+    subp(l) = plot(temp_time  ,M,'linewidth',1.5,'color',Compcolors(l,:));
+    
+    for t = 1:size(MTS,2)
+        S(t) = squeeze(std(MTS(MTT(:,t),t)))'./sqrt(sum(MTT(:,t)));
+    end
+    %S = squeeze(std(MT(:,cc(l),:)))'./sqrt(nboots);
     h = fill([temp_time flip(temp_time)],[M+S flip(M-S)],Compcolors(l,:),'edgecolor','none');
+    %h = fill([temp_time flip(temp_time)],[CIu; flip(CId)],Compcolors(l,:),'edgecolor','none');
     set(h,'facealpha',.3)
 end
 legend(subp,{'C1','C2','C3','C4','C5'})
@@ -347,9 +359,44 @@ for c = 1:NComp
     set(h,'facealpha',.3)
     
     xlim([-0.2 1])
+    %ylim([0 11])
+    if c==NComp
+        xlabel('time (s)')
+        ylabel('Amplitude')
+    end
+    title(['C' num2str(c)])
 end
 
-% H = imagesc(temp_time,[],Tstat');
-% set(H,'alphadata',(PVal'<(0.01)*.7)+.3)
-% colormap(jmaColors('coolhotcortex'));
-% caxis([-20 20])
+% Next step will be to include cluster level analysis
+export_fig(FIG,fullfile(FigPath,[FileName '_PARAFAC_N' num2str(NComp) '_TemporalDynamics_Stat']),'-pdf','-r200')
+
+%% Now indicate the significant evoked components
+% compare clusters with average prestim data...
+
+FIG = figure;
+set(FIG,'unit','inch','position',[0 0 10 15],'color','w');
+
+pre_win = find(temp_time<0.0 & temp_time>-0.2);
+
+for c = 1:NComp
+    subplot(NComp,1,c); hold on;
+    comp = Comp_ord(c);
+    
+
+    MTN = (MT - mean(MT(:,:,temp_time<0 & temp_time>-.3),3));%./mean(MT(:,:,temp_time<0 & temp_time>-.3),3);
+    M = squeeze(mean(MTN(:,comp,:)))';
+    X = squeeze(MTN(:,comp,:));
+    Y = repmat(temp_time,[nboots,1]);
+    scatter(Y(:),X(:),5,'filled');
+
+    xlim([-0.2 1])
+    %ylim([0 11])
+    if c==NComp
+        xlabel('time (s)')
+        ylabel('Amplitude')
+    end
+    title(['C' num2str(c)])
+end
+
+export_fig(FIG,fullfile(FigPath,[FileName '_PARAFAC_N' num2str(NComp) '_TemporalDynamics_All']),'-pdf','-r200')
+
