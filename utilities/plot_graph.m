@@ -56,7 +56,8 @@ end
 
 for N = 1:NNode
     if ~isempty(Nodelabels)
-        text(0,Coords(N)+.05*XL,Nodelabels{N},'HorizontalAlignment','center','fontsize',11,'color','k','fontweight','bold');
+        %text(0,Coords(N)+.05*XL,Nodelabels{N},'HorizontalAlignment','center','fontsize',11,'color','k','fontweight','bold');
+        text(-max(Coords)/4,Coords(N),Nodelabels{N},'HorizontalAlignment','center','fontsize',14,'color','k','fontweight','normal');
     end
 end
 
@@ -64,7 +65,7 @@ end
 ylim([min(Coords) max(Coords)]*1);
 XL = -min(Coords)+max(Coords);
 xlim([-XL/2 XL/2]);
-set(gca,'xtick',[],'ytick',[]);
+set(gca,'xtick',[],'ytick',sort(Coords,'ascend'));%,'yticklabel',[]);
 box on
 %disp(NE)
 

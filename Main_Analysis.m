@@ -7,6 +7,7 @@ addpath(genpath('/Users/elhamb/Documents/Codes/Git/EEGSourceSim'))
 addpath(genpath(pwd));
 
 ProjectPath = '/Users/elhamb/Documents/Data/AllenBrainObserver/preliminary_results';
+%ProjectPath = '/Volumes/Elham-Unifr/Data/AllenBrain/preliminary_results';
 
 % Alan atlas
 addpath(genpath('/Users/elhamb/Documents/Codes/Git/AllenMouseAtlas'));
@@ -15,7 +16,7 @@ Animal_List = {'766640955','767871931','768515987','771160300','771990200','7748
 
 % in case of grating condition
 Condition = 'drifting_gratings_75_repeats';
-StimParams.contrast = .1;
+StimParams.contrast = .8;
 %StimParams.orientation = [90 45];
 
 %Condition = 'dot_motion';

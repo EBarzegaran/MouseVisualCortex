@@ -13,7 +13,7 @@ load ROInames;
 NROIs = numel(STOK_avg.ROIs);
 %% plot each ROI separately
 
-MODE = 1;
+MODE = 2;
 Time    = STOK_avg.Time;
 Freq    = STOK_avg.Freq;
 PDC     = STOK_avg.PDC;
@@ -21,7 +21,7 @@ PDC     = (PDC - mean(PDC(:,:,:,Time>-.3 & Time<0),4))./mean(PDC(:,:,:,Time>-.3 
 if MODE==1
     TW = [0 2];
 else
-    TW = [.05 .4];
+    TW = [-.2 1];
 end
 
 for roi = 1:NROIs
@@ -36,7 +36,7 @@ for roi = 1:NROIs
 end
 %% Plot averaged oevr layers of all ROIs connectivity
 
-MODE = 1;
+MODE = 2;
 Time    = STOK_avg.Time;
 Freq    = STOK_avg.Freq;
 PDC     = STOK_avg.PDC;
@@ -44,7 +44,7 @@ PDC     = (PDC - mean(PDC(:,:,:,Time>-.3 & Time<0),4))./mean(PDC(:,:,:,Time>-.3 
 if MODE==1
     TW = [0 2];
 else
-    TW = [.05 .4];
+    TW = [-.2 1];
 end
 TimeInd = (Time>TW(1) & Time<TW(2));
 clear PDC_avg;
@@ -56,9 +56,11 @@ for roi = 1:NROIs
     end
 end
 
-PDC_avg_diff = PDC_avg - permute(PDC_avg,[2 1 3 4]);
+FIG1 = dynet_connplot(PDC_avg,Time(TimeInd),Freq,cellfun(@(x) ROI_names.(x), STOK_avg.ROIs,'uni',false),[],[],[],0);
 
-FIG1 = dynet_connplot(PDC_avg_diff,Time(TimeInd),Freq,cellfun(@(x) ROI_names.(x), STOK_avg.ROIs,'uni',false),[],[],[],0);
+%PDC_avg_diff = PDC_avg - permute(PDC_avg,[2 1 3 4]);
+
+FIG1 = dynet_connplot(PDC_avg_diff,Time(TimeInd),Freq,cellfun(@(x) ROI_names.(x), STOK_avg.ROIs,'uni',false),[],[],[],1);
 set(FIG1,'unit','inch','position',[0 0 25 15],'color','w');
 if MODE==1
     export_fig(FIG1,fullfile(SavePath,['STOK_AllROIs_diff_sustained' FileName]),'-pdf'); close; 

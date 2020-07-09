@@ -44,7 +44,7 @@ StimName = ['_' Stimuli '_' Params];
 
 %% for each session and stimuli load the probes data
 
-if ~exist(fullfile(ProjectPath,'Averaged','Fullmodel',['STOK_ALL' SaveName '.mat']))
+if exist(fullfile(ProjectPath,'Averaged','Fullmodel',['STOK_ALL' SaveName '.mat']))
     
     for S = 1:numel(Sessions_ID)
 
@@ -62,6 +62,7 @@ if ~exist(fullfile(ProjectPath,'Averaged','Fullmodel',['STOK_ALL' SaveName '.mat
 
             % read data for each probe and estimate optimum model order
             try % load Laminar info first
+                    addpath(fullfile(ProjectPath,Sessions_ID{S},'MatlabData'));
                     LayerInfo = readtable(fullfile(ProjectPath,Sessions_ID{S},'MatlabData','Laminar_Layer3.xlsx'));
                 catch
                     error('Indicate the Laminar layers first...')

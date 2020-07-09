@@ -1,5 +1,5 @@
 
-function [Hf, Hccf] = HierarchyTimeFreq(STOK_avg)
+function [Hf, Hccf, BestPerm] = HierarchyTimeFreq(STOK_avg,Method)
 
 %% Hierarchical organization based on siegle paper
 
@@ -18,21 +18,18 @@ for roi1 = 1:NROIs
        end
    end
 end
-%
-%HscoreMR = PDC;
 
-% for t = 50:numel(Time)
-%     M = (nanmean(HscoreMR(:,:,:,t),3));
-%     %M = M./nansum(M(:));
-%     [H(t,:),Hcc(t)] = HierarchyExtract(M);
-% end 
-
+tic
 for f = 1:100
-    for t = 50:numel(Time)
+    %if mod(f,10)==0,disp(['Freq = ' num2str(f)]);end
+    for t = 1:numel(Time)
         M = squeeze((HscoreMR(:,:,f,t)));
         %M = M./nansum(M(:));
-        [Hf(f,t,:),Hccf(f,t)] = HierarchyExtract(M);
+        [Hf(f,t,:),Hccf(f,t),BestPerm(f,t,:)] = HierarchyExtract(M,Method);
+        
     end 
 end
+toc
+%[Hf,Hccf, BestPerm] = HierarchyExtractTimeFreq(HscoreMR,Method);
 
 end
