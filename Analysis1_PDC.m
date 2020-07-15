@@ -16,9 +16,10 @@ Animal_List = {'766640955','767871931','768515987','771160300','771990200','7748
 
 % in case of grating condition
 Condition = 'drifting_gratings_75_repeats';
-StimParams.contrast = .8;
+StimParams.contrast = .8; % Or 0.1
 %StimParams.orientation = [90 45];
 
+% in case of dot motion condition
 %Condition = 'dot_motion';
 %StimParams.Speed = [0.0100 0.0200 0.0400];% 0.0005 0.0010 0.0050 0.0100 0.0200 0.0400
 

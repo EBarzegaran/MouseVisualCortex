@@ -135,24 +135,14 @@ if ~exist(fullfile(ProjectPath,'Averaged','Fullmodel',['STOK_ALL' SaveName '.mat
             save(fullfile(ProjectPath,Sessions_ID{S},'MatlabData',['session_Prep' StimName '.mat']),'session_cur')
         end
 
-        %% Run STOK analysis with indicated model order, first on single ROIs
-    %     ROIs = session.(['S' Sessions_ID{S}]).ROIs;
-    %     for roi = 1:numel(ROIs)
-    %         [Temp.PDC,Temp.f,Temp.Times] = LFPF.STOKEstimate(session.(['S' Sessions_ID{S}]).(ROIs{roi}),opt.MOrd, opt.ff,opt.PDCMethod,opt.Freqs);
-    %         Temp.ROI = ROIs{roi};
-    %         Stok.(['S' Sessions_ID{S}]).(Temp.ROI) = Temp;
-    %     end
-
         %% Estimate STOK over all ROIs
-         tic
+         
            [Temp.PDC,Temp.f,Temp.Times,Temp.ROIs,Temp.KF,Temp.Probeinfo] = LFPF.STOKEstimate_All(session.(['S' Sessions_ID{S}]),opt.MOrd, opt.ff,opt.PDCMethod,opt.ROIs,opt.Freqs);
            StokALL.(['S' Sessions_ID{S}]) = Temp;
                
-               
-%                [~,Temp.f,Temp.Times,Temp.ROIs,Temp.KF] = LFPF.STOKEstimate_All(session.(['S' Sessions_ID{S}]),opt.MOrd, opt.ff,opt.PDCMethod,opt.ROIs,opt.Freqs,false);
-            Temp = rmfield(Temp,'PDC');
-            AR_ALL.(['S' Sessions_ID{S}]) = Temp;
-         toc
+           Temp = rmfield(Temp,'PDC');
+           AR_ALL.(['S' Sessions_ID{S}]) = Temp;
+         
 
     end
 
@@ -170,15 +160,12 @@ savefig = true;
 
 %% plot the average
 
-% STOK_Averaged = STOKROIAverage(Stok,[],savefig,Savepath,opt.PDCMethod);
 SpecEstim =true;
 SignalROIAverage(session,opt.ROIs,savefig,Savepath,StimName,SpecEstim,opt.Freqs);    
 
 %% average the whole visual cortex networks
 
 STOKAllAverage(StokALL,opt.ROIs,savefig,Savepath,SaveName);
-%STOKAllLayerStats(StokALL,opt.ROIs,savefig,Savepath,opt.PDCMethod);
-%STOKAllDirectStats(StokALL,opt.ROIs,savefig,Savepath,opt.PDCMethod);
 
 end
     
