@@ -53,12 +53,9 @@ if ~exist(['Hierarchy_' Method '_' FileName '.mat'],'file')
         end
     end
 
-    %save(['Hierarchy_' FileName '_BastosM'],'Hf','Hccf','ROIs_Select','Time');
     save(['Hierarchy_' Method '_' FileName ],'Hf','Hccf','BestPerm','ROIs_Select','Time','nboots','bootsize','BootIDs');
-    
 else
     load(['Hierarchy_' Method '_' FileName ]);
-    %load(['Hierarchy_' FileName '_BastosM.mat']);
 end
 
 % 

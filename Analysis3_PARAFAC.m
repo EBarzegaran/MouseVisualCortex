@@ -385,7 +385,7 @@ for b = 1:2%nboots
     end
     b
 end
-%%
+
 figure,
 for roi = 1:6
     plot(squeeze(mean(mean(H(30:end,:,roi,4,:)),4)),'color',Colors(roi,:));hold on
