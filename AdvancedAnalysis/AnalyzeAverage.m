@@ -3,14 +3,18 @@ clear; clc;
 FileName = 'drifting_gratings_75_repeats__contrast0-8_iPDC_Mord15_ff098';%'_dot_motion__Speed0-01--------0-02--------0-04_iPDC_Mord15';%'drifting_gratings_75_repeats__contrast0-1_iPDC_Mord10';%
 Path = '/Users/elhamb/Documents/Data/AllenBrainObserver/preliminary_results/Averaged/Fullmodel/';
 %%
-addpath(genpath(fileparts(mfilename('fullpath'))));
+addpath(genpath(fileparts(fileparts(mfilename('fullpath')))));
+addpath(genpath('/Users/elhamb/Documents/Codes/NonGit/dynet_toolbox-master'));
+fileparts(mfilename('fullpath'))
 
 load([Path 'STOK_Average_' FileName '.mat']);
+ROIs = {'VISp','VISl','VISrl','VISal','VISpm','VISam'};
 SavePath = Path;
 COBJ = LFPF.RColors();
 Colors = COBJ.MatrixColors(STOK_avg.ROIs);
 load ROInames;
 NROIs = numel(STOK_avg.ROIs);
+ROISN = cellfun(@(x) ROI_names.(x),ROIs,'uni',false);
 %% plot each ROI separately
 
 MODE = 2;
@@ -39,8 +43,8 @@ end
 MODE = 2;
 Time    = STOK_avg.Time;
 Freq    = STOK_avg.Freq;
-PDC     = STOK_avg.PDC;
-PDC     = (PDC - mean(PDC(:,:,:,Time>-.3 & Time<0),4))./mean(PDC(:,:,:,Time>-.3 & Time<0),4);
+PDC     = (STOK_avg.PDC);
+PDC     = (PDC - mean(PDC(:,:,:,Time>-.3 & Time<0),4))./mean(PDC(:,:,:,Time>-.3 & Time<0),4)*100;
 if MODE==1
     TW = [0 2];
 else
@@ -52,14 +56,269 @@ for roi = 1:NROIs
     for roi2 = 1:NROIs
         Ind = ((roi-1)*6+1):(roi*6);
         Ind2 = ((roi2-1)*6+1):(roi2*6);
-        PDC_avg(roi,roi2,:,:) = squeeze(sum(sum(PDC(Ind,Ind2,:,TimeInd),1),2)./(numel(Ind)*numel(Ind2)));
+        if roi~=roi2
+            PDC_avg(roi,roi2,:,:) = squeeze(sum(sum(PDC(Ind,Ind2,:,TimeInd),1),2)./(numel(Ind)*numel(Ind2)));
+        else
+            Temp=zeros(size(PDC,3),sum(TimeInd));
+            for i=1:numel(Ind)
+                Temp = Temp+squeeze(PDC(Ind(i),Ind(i),:,TimeInd));
+            end
+            Temp = Temp./numel(Ind);
+            PDC_avg(roi,roi2,:,:) = Temp;
+        end
+    end
+end
+
+for l1 = 1:6
+    for l2 = 1:6
+            Ind = (0:(NROIs-1))*6+l1;
+            Ind2 = (0:(NROIs-1))*6+l2;
+        if l1~=l2
+            PDC_layer_avg(l1,l2,:,:) = squeeze(sum(sum(PDC(Ind,Ind2,:,TimeInd),1),2)./(numel(Ind)*numel(Ind2)));
+        else
+            Temp=zeros(size(PDC,3),sum(TimeInd));
+            for i=1:numel(Ind)
+                Temp = Temp+squeeze(PDC(Ind(i),Ind(i),:,TimeInd));
+            end
+            Temp = Temp./numel(Ind);
+            PDC_layer_avg(l1,l2,:,:) = Temp;
+        end
     end
 end
 
 FIG1 = dynet_connplot(PDC_avg,Time(TimeInd),Freq,cellfun(@(x) ROI_names.(x), STOK_avg.ROIs,'uni',false),[],[],[],0);
+colormap('jet')
+set(FIG1,'unit','inch','position',[1 1 12 8],'color','w')
+export_fig(FIG1,fullfile(SavePath,['STOK_AllROIs' FileName]),'-pdf');
+
+
+FIG1 = dynet_connplot(PDC_layer_avg,Time(TimeInd),Freq,arrayfun(@(x) ['l' num2str(x)],1:6,'uni',false),[],[],[],0);
+colormap('jet')
+set(FIG1,'unit','inch','position',[1 1 8 5],'color','w')
+export_fig(FIG1,fullfile(SavePath,['STOK_AllLayers' FileName]),'-pdf');
+
 
 %PDC_avg_diff = PDC_avg - permute(PDC_avg,[2 1 3 4]);
+%% plot PSDs for ROIs and layers
+FIG = figure;
+FS=12;
+set(FIG,'unit','centimeters','position',[1 1 6 8]*2,'color','w')
+M = max(PDC_avg(:))/200;
 
+m = min(PDC_avg(:))/1;
+for roi = 1:NROIs
+    subplot(NROIs,2,(roi-1)*2+1)
+    imagesc(Time(TimeInd),Freq,squeeze((PDC_avg(roi,roi,:,:))))
+    axis xy;
+    caxis([m M])
+ 
+    set(gca,'position',get(gca,'position')+[-0.03 -.02 0 .03])
+    set(gca,'fontsize',FS)
+    if roi~=NROIs
+        set(gca,'TickDir','out','xticklabel',[],'yticklabel',[],'lineWidth',1.5)
+    else
+        set(gca,'TickDir','out','lineWidth',1.5,'yticklabel',[])
+
+    end
+    text(-.46,50,ROISN{roi},'color',Colors(roi,:),'fontsize',FS+2,'fontweight','bold')
+    vline(0,'--w')
+    
+end
+
+for l = 1:6
+    subplot(6,2,(l-1)*2+2)
+
+    %yyaxis right
+    set(gca,'YColor','k');
+    imagesc(Time(TimeInd),Freq,squeeze((PDC_layer_avg(l,l,:,:))))
+    %yyaxis left
+    axis xy;
+    caxis([m M])
+    if l==1
+        Pos_temp = get(gca,'position'); 
+        colorbar
+        set(gca,'position',Pos_temp)
+    end
+    set(gca,'position',get(gca,'position')+[-0.03 -.02 0 .03])
+    set(gca,'fontsize',FS)
+    if l~=6
+        set(gca,'TickDir','out','xticklabel',[],'yticklabel',[],'lineWidth',1.5)
+    else
+        set(gca,'TickDir','out','yticklabel',[],'lineWidth',1.5)
+        yyaxis right
+        set(gca,'YColor','k');
+        set(gca,'ytick',.2:.2:1,'yticklabel',(.2:.2:1)*100)
+        
+        YL=ylabel('Frequency(Hz)');
+        set(YL,'position',get(YL,'position')+[-0.07 0 0])
+        xlabel('Time(sec)');
+        yyaxis left
+    end
+    %
+    if l==1
+       
+        TL = title('PSD');
+        set(TL,'position',get(TL,'position')+[-.8 10 0])
+    end
+    
+    text(-.35,50,['l' num2str(l)],'color','k','fontsize',FS+2,'fontweight','bold')
+    vline(0,'--w')
+    
+end
+
+colormap('jet')
+export_fig(FIG,fullfile(SavePath,['STOK_PSD_AllLayers_AllROIs' FileName]),'-pdf');
+
+%% plot output iPDC
+FIG = figure;
+FS=12;
+set(FIG,'unit','centimeters','position',[1 1 6 8]*2,'color','w')
+M = max(PDC_avg(:))/300;
+for roi = 1:NROIs
+    subplot(NROIs,2,(roi-1)*2+1)
+    imagesc(Time(TimeInd),Freq,squeeze(mean(PDC_avg(:,roi,:,:))))
+    axis xy;
+    caxis([0 M])
+ 
+    set(gca,'position',get(gca,'position')+[-0.03 -.02 0 .03])
+    set(gca,'fontsize',FS)
+    if roi~=NROIs
+        set(gca,'TickDir','out','xticklabel',[],'yticklabel',[],'lineWidth',1.5)
+    else
+        set(gca,'TickDir','out','lineWidth',1.5,'yticklabel',[])
+
+    end
+    text(-.46,50,ROISN{roi},'color',Colors(roi,:),'fontsize',FS+2,'fontweight','bold')
+    vline(0,'--w')
+    
+end
+
+for l = 1:6
+    subplot(6,2,(l-1)*2+2)
+
+    %yyaxis right
+    set(gca,'YColor','k');
+    imagesc(Time(TimeInd),Freq,squeeze(mean(PDC_layer_avg(:,l,:,:))))
+    %yyaxis left
+    axis xy;
+    caxis([0 M])
+    if l==1
+        Pos_temp = get(gca,'position'); 
+        colorbar
+        set(gca,'position',Pos_temp)
+    end
+    set(gca,'position',get(gca,'position')+[-0.03 -.02 0 .03])
+    set(gca,'fontsize',FS)
+    if l~=6
+        set(gca,'TickDir','out','xticklabel',[],'yticklabel',[],'lineWidth',1.5)
+    else
+        set(gca,'TickDir','out','yticklabel',[],'lineWidth',1.5)
+        yyaxis right
+        set(gca,'YColor','k');
+        set(gca,'ytick',.2:.2:1,'yticklabel',(.2:.2:1)*100)
+        
+        YL=ylabel('Frequency(Hz)');
+        set(YL,'position',get(YL,'position')+[-0.07 0 0])
+        xlabel('Time(sec)');
+        yyaxis left
+    end
+    %
+    if l==1
+       
+        TL = title('iPDC output');
+        set(TL,'position',get(TL,'position')+[-.8 10 0])
+    end
+    
+    text(-.35,50,['l' num2str(l)],'color','k','fontsize',FS+2,'fontweight','bold')
+    vline(0,'--w')
+    
+end
+
+colormap('jet')
+export_fig(FIG,fullfile(SavePath,['STOK_iPDCout_AllLayers_AllROIs' FileName]),'-pdf');
+
+%% plot laminar iPDCs for an examples
+FIG = figure;
+FS=12;
+set(FIG,'unit','centimeters','position',[1 1 6 10]*2,'color','w')
+M = max(PDC_avg(:))/300;
+ind1 = 1:6;
+ind2 = 7:12;
+for l = 1:6
+    subplot(NROIs,2,(l-1)*2+1)
+    imagesc(Time(TimeInd),Freq,squeeze(mean(PDC(ind2,ind1(l),:,Time>TW(1) & Time<TW(2)))))
+    axis xy;
+    caxis([0 M])
+ 
+    set(gca,'position',get(gca,'position')+[-0.03 -.03 0 .02])
+    set(gca,'fontsize',FS)
+    if l~=6
+        set(gca,'TickDir','out','xticklabel',[],'yticklabel',[],'lineWidth',1.5)
+    else
+        set(gca,'TickDir','out','lineWidth',1.5,'yticklabel',[])
+
+    end
+    if l==1
+        title('source(V1)')
+    end
+    text(-.45,50,['L' num2str(l)],'color','k','fontsize',FS+2,'fontweight','normal')
+    vline(0,'--w')
+    
+end
+
+for l = 1:6
+    subplot(6,2,(l-1)*2+2)
+
+    %yyaxis right
+    set(gca,'YColor','k');
+    imagesc(Time(TimeInd),Freq,squeeze(mean(PDC(ind2(l),ind1,:,Time>TW(1) & Time<TW(2)),2)))
+    %yyaxis left
+    axis xy;
+    caxis([0 M])
+    if l==1
+        Pos_temp = get(gca,'position'); 
+        colorbar
+        set(gca,'position',Pos_temp)
+    end
+    set(gca,'position',get(gca,'position')+[-0.03 -.03 0 .02])
+    set(gca,'fontsize',FS)
+    if l~=6
+        set(gca,'TickDir','out','xticklabel',[],'yticklabel',[],'lineWidth',1.5)
+    else
+        set(gca,'TickDir','out','yticklabel',[],'lineWidth',1.5)
+        yyaxis right
+        set(gca,'YColor','k');
+        set(gca,'ytick',.2:.2:1,'yticklabel',(.2:.2:1)*100)
+        
+        YL=ylabel('Frequency(Hz)');
+        set(YL,'position',get(YL,'position')+[-0.07 0 0])
+        xlabel('Time(sec)');
+        yyaxis left
+    end
+    %
+    if l==1
+        title('Target(LM)');
+        text(-1.45,155,'Evoked Laminar iPDCs (V1->LM)','fontsize',FS,'fontweight','bold');
+        set(TL,'position',get(TL,'position')+[-.8 10 0])
+    end
+    
+    text(-.45,50,['L' num2str(l)],'color','k','fontsize',FS+2,'fontweight','normal')
+    vline(0,'--w')
+    
+end
+
+colormap('jet')
+export_fig(FIG,fullfile(SavePath,['STOK_iPDCLaminar_V1_LM' FileName]),'-pdf');
+%%
+for i = 2:6
+ind2 = (i-1)*6+1:i*6;
+FIG1 = dynet_connplot(PDC(ind2,ind1,:,Time>TW(1) & Time<TW(2)),Time(TimeInd),Freq,arrayfun(@(x) ['L' num2str(x)], 1:6,'uni',false),[],[],[],0);
+colormap('jet')
+set(FIG1,'unit','inch','position',[1 1 12 8],'color','w')
+export_fig(FIG1,fullfile(SavePath,['STOK_V1' ROISN{i} FileName]),'-pdf');
+end
+
+%%
 FIG1 = dynet_connplot(PDC_avg_diff,Time(TimeInd),Freq,cellfun(@(x) ROI_names.(x), STOK_avg.ROIs,'uni',false),[],[],[],1);
 set(FIG1,'unit','inch','position',[0 0 25 15],'color','w');
 if MODE==1

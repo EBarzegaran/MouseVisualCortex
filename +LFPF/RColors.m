@@ -37,9 +37,9 @@ classdef RColors
                   case 'VISal'
                       Color = [0.65,0.46,0.11];
                   case 'VISpm'
-                      Color = [1 .5 0];
+                      Color = [1 .7 .3];
                   case 'VISam'
-                      Color = [0.9,0.11,0.11];
+                      Color = [0.8,0.11,0.11];
                   case 'VISmma'
                       Color = [0.40,0,0.12];
                   case 'LGv'

@@ -44,7 +44,7 @@ StimName = ['_' Stimuli '_' Params];
 
 %% for each session and stimuli load the probes data
 
-if exist(fullfile(ProjectPath,'Averaged','Fullmodel',['STOK_ALL' SaveName '.mat']))
+if ~exist(fullfile(ProjectPath,'Averaged','Fullmodel',['STOK_ALL' SaveName '.mat']))
     
     for S = 1:numel(Sessions_ID)
 
@@ -84,7 +84,14 @@ if exist(fullfile(ProjectPath,'Averaged','Fullmodel',['STOK_ALL' SaveName '.mat'
 
                 % load the probe coordinate and label data
                 probeinfo = load(fullfile(ProjectPath,Sessions_ID{S},'MatlabData',[Probes_ID{p} '_Probeinfo']));
+                
                 if ~isfield(probeinfo,'RF_mapping')
+                    %%%%%%%%
+                    [probeinfo.Coords.id, ind] = sort(probeinfo.Coords.id);
+                    probeinfo.Coords.AP_CCF = probeinfo.Coords.AP_CCF(ind);
+                    probeinfo.Coords.DV_CCF = probeinfo.Coords.DV_CCF(ind);
+                    probeinfo.Coords.ML_CCF = probeinfo.Coords.ML_CCF(ind);
+                    %%%%%%%%
                     gabor_file = fullfile(ProjectPath,Sessions_ID{S},'MatlabData',[Probes_ID{p} '_gabors250.mat']);
                     probeinfo.RF_mapping = LFPF.RF_mapping(gabor_file);
                     % save the results

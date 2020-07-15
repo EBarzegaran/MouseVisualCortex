@@ -29,8 +29,8 @@ BootIDs = BootAllROIs(IDs, ROIsPerID, ROIs_Select, nboots, bootsize);
 % this code is very slow, the first thing to do is to select a shorter time
 % window ([-.8 1])
 TW = [-.8 1];
-Method = 'functional';
-if exist(['Hierarchy_' Method '_' FileName '.mat'],'file')
+Method = 'tracer';
+if ~exist(['Hierarchy_' Method '_' FileName '.mat'],'file')
     for b = 1:nboots
         tic
         % make the sub-sample stok structure

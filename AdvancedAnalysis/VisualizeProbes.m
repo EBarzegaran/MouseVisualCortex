@@ -35,9 +35,13 @@ for S = 1:numel(Sessions_ID)
         CO = [Coords.AP_CCF; Coords.DV_CCF; Coords.ML_CCF];
 
         [IDS, ind] = sort(Coords.id);
-
         CO = CO(:,ind);
-        scatter3(CO(1,:)/10,CO(3,:)/10,CO(2,:)/10,10,'filled');
+        cmap = jet(12);
+        for i = numel(intervals)-2:numel(intervals)-2
+            scatter3(CO(1,(intervals(i):intervals(i+1))+1)/10,CO(3,(intervals(i):intervals(i+1))+1)/10,CO(2,(intervals(i):intervals(i+1))+1)/10,10,cmap(i,:),'filled');
+        end
+        
+        
 
 %         AN = arrayfun(@(x) av(round(CO(1,x)/10),round(CO(2,x)/10),round(CO(3,x)/10)),1:size(CO,2));
 % 

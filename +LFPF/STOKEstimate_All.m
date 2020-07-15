@@ -34,7 +34,7 @@ Y           = cat(2,Y{:});
 % final estimation of FC
 KF          = dynet_SSM_STOK(squeeze(Y),P,ff);
 if doPDC
-    S_STOK      = dynet_ar2pdc(KF,srate,freqs,Method,1, 2,0);
+    S_STOK      = dynet_ar2pdc(KF,srate,freqs,Method,1, 2,1);
 else
     S_STOK = [];
 end

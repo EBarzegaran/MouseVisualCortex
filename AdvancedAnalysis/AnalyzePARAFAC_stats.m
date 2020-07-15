@@ -2,7 +2,8 @@
 
 addpath(genpath(fileparts(mfilename('fullpath'))));
 addpath(genpath(fileparts(fileparts(mfilename('fullpath')))));
-addpath(genpath('E:\Elham\Codes\NonGit\nway331'));% add the nway toolbox
+%addpath(genpath('E:\Elham\Codes\NonGit\nway331'));% add the nway toolbox
+addpath(genpath('/Users/elhamb/Documents/Codes/NonGit/nway331'));% add the nway toolbox
 clear; clc;
 FileName = 'drifting_gratings_75_repeats__contrast0-1_iPDC_Mord15_ff098';
 Path = '/Users/elhamb/Documents/Data/AllenBrainObserver/preliminary_results/Averaged/Fullmodel/';
@@ -671,4 +672,39 @@ end
 
 export_fig(FIG,fullfile(FigPath,[FileName '_PARAFAC_N' num2str(NComp) '_Bootstrap_HarrisM']),'-pdf','-r200')
 
+%% convert back the components into data space
 
+for b = 1:2%nboots
+    Model_temp  = Model_reord{nboots};
+    modes       = [1 4 5];% remove laminar modes
+    Model_temp  = Model_temp(modes);
+    Sizes       = cellfun(@(x) size(x,1),Model_temp);
+    ord = [1 3 4; 3 1 4; 3 4 1];
+    for m = 1:numel(Model_temp)
+        Model_temp{m} = permute(Model_temp{m},[2 ord(m,:)]);
+        if m==1
+            MT = Model_temp{m};
+        else
+            MT = Model_temp{m}.*MT;
+        end
+    end
+    
+    % NOW we need to do hierarchy analysis B)
+    FF_labels = [1 1 -1 -1];
+    for f = 1:size(MT,3)
+        for t = 1:size(MT,4)
+            M = zeros(NComp,numel(ROIs)^2);
+            M(:,indTotal) = (MT(:,:,f,t));%
+            M = reshape(M,NComp,numel(ROIs),numel(ROIs));
+            for c = 1:NComp
+                [H(f,t,:,c,b)] = HierarchyExtract(squeeze(M(c,:,:)),'functional');
+            end
+        end
+    end
+    b
+end
+%%
+figure,
+for roi = 1:6
+    plot(squeeze(mean(mean(H(30:end,:,roi,4,:)),4)),'color',Colors(roi,:));hold on
+end
