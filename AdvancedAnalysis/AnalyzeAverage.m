@@ -1,6 +1,6 @@
 
 clear; clc;
-FileName = 'drifting_gratings_75_repeats__contrast0-8_iPDC_Mord15_ff098';%'_dot_motion__Speed0-01--------0-02--------0-04_iPDC_Mord15';%'drifting_gratings_75_repeats__contrast0-1_iPDC_Mord10';%
+FileName = 'drifting_gratings_75_repeats__contrast0-1_iPDC_Mord15_ff098';%'_dot_motion__Speed0-01--------0-02--------0-04_iPDC_Mord15';%'drifting_gratings_75_repeats__contrast0-1_iPDC_Mord10';%
 Path = '/Users/elhamb/Documents/Data/AllenBrainObserver/preliminary_results/Averaged/Fullmodel/';
 %%
 addpath(genpath(fileparts(fileparts(mfilename('fullpath')))));
@@ -39,7 +39,7 @@ for roi = 1:NROIs
     end
 end
 %% Plot averaged oevr layers of all ROIs connectivity
-
+FS = 12;
 MODE = 2;
 Time    = STOK_avg.Time;
 Freq    = STOK_avg.Freq;
@@ -88,13 +88,27 @@ end
 
 FIG1 = dynet_connplot(PDC_avg,Time(TimeInd),Freq,cellfun(@(x) ROI_names.(x), STOK_avg.ROIs,'uni',false),[],[],[],0);
 colormap('jet')
-set(FIG1,'unit','inch','position',[1 1 12 8],'color','w')
+set(FIG1,'unit','inch','position',[1 1 6 3],'color','w')
 export_fig(FIG1,fullfile(SavePath,['STOK_AllROIs' FileName]),'-pdf');
 
-
-FIG1 = dynet_connplot(PDC_layer_avg,Time(TimeInd),Freq,arrayfun(@(x) ['l' num2str(x)],1:6,'uni',false),[],[],[],0);
+FIG1 = figure;
+imagesc(Time(TimeInd),Freq,squeeze(mean(mean(PDC_avg,1),2)));
+axis xy
+caxis([-10 50])
 colormap('jet')
-set(FIG1,'unit','inch','position',[1 1 8 5],'color','w')
+set(FIG1,'unit','inch','position',[1 1 5 2.8],'color','w')
+set(gca,'fontsize',FS)
+xlabel('Time(S)')
+ylabel('Frequency(Hz)')
+vline(0,'w-')
+CL = colorbar;
+set(get(CL,'title'),'string','%Change')
+export_fig(FIG1,fullfile(SavePath,['STOK_AverageAll' FileName]),'-pdf');
+
+
+FIG1 = dynet_connplot(PDC_layer_avg,Time(TimeInd),Freq,arrayfun(@(x) ['L' num2str(x)],1:6,'uni',false),[],[],[],1);
+colormap('jet')
+set(FIG1,'unit','inch','position',[1 1 6 3],'color','w')
 export_fig(FIG1,fullfile(SavePath,['STOK_AllLayers' FileName]),'-pdf');
 
 
@@ -312,7 +326,7 @@ export_fig(FIG,fullfile(SavePath,['STOK_iPDCLaminar_V1_LM' FileName]),'-pdf');
 %%
 for i = 2:6
 ind2 = (i-1)*6+1:i*6;
-FIG1 = dynet_connplot(PDC(ind2,ind1,:,Time>TW(1) & Time<TW(2)),Time(TimeInd),Freq,arrayfun(@(x) ['L' num2str(x)], 1:6,'uni',false),[],[],[],0);
+FIG1 = dynet_connplot(PDC(ind2,ind1,:,Time>TW(1) & Time<TW(2)),Time(TimeInd),Freq,arrayfun(@(x) ['L' num2str(x)], 1:6,'uni',false),[],[],[],1);
 colormap('jet')
 set(FIG1,'unit','inch','position',[1 1 12 8],'color','w')
 export_fig(FIG1,fullfile(SavePath,['STOK_V1' ROISN{i} FileName]),'-pdf');
