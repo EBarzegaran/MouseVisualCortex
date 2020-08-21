@@ -9,7 +9,7 @@ function Results = DistancePDCcorr(StokALL,P_th,Path,CondName)
     Diag_All    = [];
     Col_All     = [];
     
-    for id = 1:numel(IDs)
+    for id = 1:numel(IDs)-1
         id
         inter_connect = kron(eye(numel(StokALL.(IDs{id}).ROIs)),ones(6));
         %
@@ -17,13 +17,17 @@ function Results = DistancePDCcorr(StokALL,P_th,Path,CondName)
         NNode       = size(PDC_temp,1);
         PDC_temp    = reshape(PDC_temp,[NNode*NNode size(PDC_temp,3) size(PDC_temp,4)]);
         Dist_temp   = reshape(StokALL.(IDs{id}).ProbeDist,NNode*NNode,1);
+        if sum(Dist_temp>4000)~=0
+            IDs{id}
+        end
         Pval_temp   = reshape((StokALL.(IDs{id}).ProbeRFPval<P_th).*(StokALL.(IDs{id}).ProbeRFPval'<P_th),NNode*NNode,1);
         Laminar_temp = reshape(inter_connect,NNode*NNode,1);
         Diag_temp   = reshape(eye(NNode),NNode*NNode,1);
         %Col_temp    = zeros(NNode);
         %Col_temp(7:end,1:6) = 1;
         %Col_temp    = tril(1-inter_connect); % FF
-        Col_temp    = triu(1-inter_connect); % FB
+        %Col_temp    = triu(1-inter_connect); % FB
+        Col_temp    = (1-inter_connect); % All
         Col_temp    = reshape(Col_temp,NNode*NNode,1); 
         
         PDC_All     = cat(1,PDC_All,PDC_temp);
@@ -35,7 +39,7 @@ function Results = DistancePDCcorr(StokALL,P_th,Path,CondName)
         %disp(['Dist: ' num2str(numel(Dist_All)) ' ,Pval: ' num2str(numel(Pval_All))])
     end
     %% plot V1 effect change
-    PDC_All_BR = PDC_All- mean(PDC_All(:,:,StokALL.S766640955.Times<0 & StokALL.S766640955.Times>-.6),3);
+    PDC_All_BR = PDC_All;%- mean(PDC_All(:,:,StokALL.S766640955.Times<0 & StokALL.S766640955.Times>-.6),3);
     %
     for t = 1:size(PDC_All_BR,3)
         for f = 1:size(PDC_All_BR,2)
@@ -49,7 +53,7 @@ function Results = DistancePDCcorr(StokALL,P_th,Path,CondName)
     IM = imagesc(StokALL.S766640955.Times,[],R_diagrm');
     set(IM, 'alphadata',P_diagrm'<.01)
     axis xy
-    xlim([0 2])
+    xlim([-.5 1])
     colormap('jet')
     caxis([-.2 .2])
     colorbar;

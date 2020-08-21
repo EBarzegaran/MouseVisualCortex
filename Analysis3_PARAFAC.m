@@ -9,17 +9,22 @@ FileName = {'drifting_gratings_75_repeats__contrast0-8_iPDC_Mord15_ff098','drift
 DataPath = 'Data_Temp';
 
 %Path = 'E:\Elham\Data\AllenBrain\preliminary_results\Averaged\Fullmodel\';
-%%
+%% Load the iPDCs for all animals
 Path = '/Users/elhamb/Documents/Data/AllenBrainObserver/preliminary_results/Averaged/Fullmodel/';
 load(fullfile(Path, ['STOK_ALL_' FileName{1} '.mat']));
 SavePath = Path;
-
 FigPath = fullfile(Path,'StatResults','PARAFAC');
+
+% extract the distance and RF distances
+load (fullfile(Path,'Probe_Data_All.mat'));
+StokALL = DistanceEstimate(StokALL,Probe_all);
+StokALL = RFDistanceEstimate(StokALL,Probe_all);
+
 %% Organize PDC values for statistics
 ROIs = {'VISp','VISl','VISrl','VISal','VISpm','VISam'};
 COBJ = LFPF.RColors();
 Colors = COBJ.MatrixColors(ROIs);
-nROIs = numel(ROIs);
+NROIs = numel(ROIs);
 load ROInames;
 ROISN = cellfun(@(x) ROI_names.(x),ROIs,'uni',false);
 addpath(genpath('../../ARC'));
@@ -39,19 +44,23 @@ for cond = 1:2
         PARAFAC_FC(StokALL,NComp,BootIDs,nboots,ROIs,DataPath,FigPath,FileName{cond});    
     end
     load(fullfile(DataPath,[FileName{cond} 'PARAFAC_covtemp_' num2str(NComp)]));
+    %DistanceBoots = DistanceForBoot(StokALL,BootIDs);
     PARRES{cond} = load(fullfile(DataPath,[FileName{cond} 'PARAFAC_covtemp_' num2str(NComp) '_ExtraVar.mat']));
+    PARRES{cond}.DistanceBoots = DistanceForBoot(StokALL,BootIDs);
 end
-%% New figure
+
+%% Main figure of all components
+close all;
 Freq = 1:100;
 con_mode = 1;
 % plotting params
 offs = -.06;
-FS = 14;
+FS = 12;
 FIG = figure(1);
 set(FIG,'unit','inch','position',[0 0 2.5*NComp 9],'color','w')
 lstyle = {'-','-'};
 lcolor = {'k',[.5 .5 .5]};
-connames = {'C = .8','C = .1'};
+connames = {'Contrast=.8','Contrast=.1'};
         
 for cond = 1:2
     
@@ -78,66 +87,81 @@ for cond = 1:2
     for c = 1:NComp
         figure(1);
         cc = Comp_ord(c);
+        
         %-----------------------------PLOT SOURCE--------------------------   
-        if cond==1
-            MS = subplot(5,NComp*2,(2*c-1)); hold on;
-            bar(model_temp_M{3}(:,cc),.6,'FaceColor',[.5 .5 .5],'EdgeColor',[0 0 .9]); %colormap(MS,jmaColors('coolhot'))
-            errorbar(1:6,model_temp_M{3}(:,cc),model_temp_S{3}(:,cc),'.','color','k')
-            view([-90 -90])
-            set(MS,'position',get(MS,'position')+[offs+(.017*c) -.02 .0 .0],'xtick',[],'fontsize',FS);
+        if cond==2
+            axes('position',[.17+(c-1)*.23 .95 .18 .13])
+            text(0, 0,['SubNetwork' num2str(c)],'fontsize',FS+1,'HorizontalAlignment' ,'center');
+            axis off
+                
+            %MS = subplot(5,NComp*2,(2*c-1)); 
+            MS = axes('position',[.07+(c-1)*.23 .78 .08 .13]);%axes('position',[.07+(c-1)*.23 .6 .18 .13]);
+            hold on;
+            bar(model_temp_M{3}(end:-1:1,cc),.6,'FaceColor',[.5 .5 .5],'EdgeColor',[0 0 0]); %colormap(MS,jmaColors('coolhot'))
+            errorbar(1:6,model_temp_M{3}(end:-1:1,cc),model_temp_S{3}(end:-1:1,cc),'.','color','k')
+            %view([-90 -90])
+            
+            camroll(90)
+            %set(MS,'yDir','reverse')
+            set(MS,'xtick',[],'fontsize',FS,'TickDir','out','linewidth',1.2,'TickLength',[0.03 0.035],'XColor',[.2 .2 .2],'YColor',[.2 .2 .2]);
             ylim([0 1.2])
-            title(['Source']);
-            box on;
-            if cc==1
-                XL = xlabel('Laminar Layers');
-                set(XL,'position',get(XL,'position')+[0 .67 0])
-            end        
-            text(-3,.75,['SubNetwork' num2str(c)],'fontsize',FS)
+            title('Source','fontweight','normal');
+            box off;      
+            
             %--------------------------PLOT TARGET-----------------------------
-            MT = subplot(5,NComp*2,(2*c));hold on;
-            bar(model_temp_M{2}(:,cc),.6,'FaceColor',[.5 .5 .5],'EdgeColor',[0 0 .9]); colormap(MS,jmaColors('coolhot'))
+            MT = axes('position',[.18+(c-1)*.23 .78 .08 .13]);hold on;
+            bar(model_temp_M{2}(:,cc),.6,'FaceColor',[.5 .5 .5],'EdgeColor',[0 0 0]); colormap(MS,jmaColors('coolhot'))
             errorbar(1:6,model_temp_M{2}(:,cc),model_temp_S{2}(:,cc),'.','color','k')
-            view([90 90])
-            set(MT,'position',get(MT,'position')+[offs+(.017*c) -.02 .0 .0],'xtick',1:6,'fontsize',FS);
+            %camroll(90)
+            view(90,90)
+            %set(MT,'yDir','reverse')
+            set(MT,'xtick',1:6,'fontsize',FS,'TickDir','out','linewidth',1.2,'TickLength',[0.03 0.035],'XColor',[.2 .2 .2],'YColor',[.2 .2 .2]);
             ylim([0 1.2])
-            title('Target')
+            title('Target','fontweight','normal')
             if cc ==1
-               % XL = ylabel('Strength');
-                %set(XL,'position',get(XL,'position')-[0.12 .5 0])
+                XL = ylabel('Strength');
+                set(XL,'position',get(XL,'position')-[.5 .8 0])
             end
-            box on;
+            box off;
 
-            annotation('arrow',[(cc-1)*.217+.163 (cc-1)*.217+.163+.03], [0.917 0.917],'color','b','linewidth',1.5 )
+            %annotation('arrow',[(cc-1)*.217+.163 (cc-1)*.217+.163+.03], [0.917 0.917],'color','b','linewidth',1.5 )
         end
         %------------------------PLOT TIME MODE----------------------------
         temp_time_ms = temp_time;%*1000;
         M = model_temp_M{5}(:,cc); %M = (M-mean(M(temp_time<0,:)))./mean(M(temp_time<0,:))*100;
-        TP = subplot(5,NComp,(c-1)+NComp*2+1+((cond-1)*NComp)); hold on;
+        if cond ==1
+            TP = axes('position',[.07+(c-1)*.23 .41 .18 .13]);
+        else
+            TP = axes('position',[.07+(c-1)*.23 .2 .18 .13]);
+        end
+       % TP = subplot(5,NComp,(c-1)+NComp*2+1+((cond-1)*NComp)); 
+        hold on;
         h = fill([temp_time_ms flip(temp_time_ms)],[M+model_temp_S{5}(:,cc); flip(M-model_temp_S{5}(:,cc))]',lcolor{cond},'edgecolor','none');
         set(h,'facealpha',.5)
         PLT = plot(temp_time_ms,M,'linewidth',1.5,'color',lcolor{cond});
         
-        ylim([-40 115])
+        ylim([-40 130])
         xlim([-.1 .85]);
         vline(0,'k--');
         hline(0,'c--');
-        set(TP,'position',get(TP,'position')+[offs+(.012*c) 0 .02 -.02],'fontsize',FS)
-        xtickangle(30)
+        set(TP,'fontsize',FS,'TickDir','out','linewidth',1.2,'TickLength',[0.03 0.035],'XColor',[.2 .2 .2],'YColor',[.2 .2 .2])
+        %xtickangle(30)
         if c==1 && cond==2
-            xlabel('Time (sec)');
-            YL = ylabel('Evoked Change (%)');
-            set(YL,'position',get(YL,'position')+[0 70 0])
+            XL = xlabel('Time (s)');
+            set(XL,'position',get(XL,'position')+[0 8 0])
+            
         end
             
         if cc~=1
-            set(TP,'ytick',[]);
+            %set(TP,'yticklabel',[]);
         end
         if cond==1
             set(TP,'xticklabel',[]);
         else
             set(TP,'position',get(TP,'position')+[0 .068 .0 0],'fontsize',FS)
         end
-        box on
+        box off
+        
         
         %title(['Consistency=' num2str(round(Comp_PerSig(cc,5),2))])
         %---------------- STATS ------------------
@@ -149,55 +173,73 @@ for cond = 1:2
             Tstat(t,cc) = stat_temp.tstat;
         end
         PVal(temp_time<.03)=1;
-        SigRes1 = PVal(:,cc)<.01;
+        SigRes1 = PVal(:,cc)<.001;
         CC = bwconncomp(SigRes1);
         for i = 1:numel(CC.PixelIdxList)
             if numel(CC.PixelIdxList{i})>10
                 SigRes = CC.PixelIdxList{i};
-                SIGF = fill([temp_time(SigRes) flip(temp_time(SigRes))],[ones(1,numel(SigRes))*-40 ones(1,numel(SigRes))*110],'r','linestyle','none');
-                set(SIGF,'facealpha',.1)
-                %plot(temp_time(SigRes)*1000,repmat(maxY*1.1,[1 size(SigRes,1)]),'.','color','r','linewidth',2)
+                x = temp_time(SigRes);
+                if cond ==1
+                    y = ones(numel(x),1)'*120;
+                else
+                    y = ones(numel(x),1)'*100;
+                end
+                z = zeros(size(x));
+                col = abs(Tstat(SigRes,cc))';  % This is the color, vary with x in this case.
+                surface([x;x],[y;y],[z;z],[col;col],...
+                        'facecol','no',...
+                        'edgecol','interp',...
+                        'linew',8); 
+                colormap(jmaColors('hotcortex'));
+                caxis([-max(col)*.2 max(col)])
+                    
             end
         end
         
         if cc==NComp
             lgnd = legend(PLT,connames{cond});
-            set(lgnd,'color','none','box','off');
+            %set(lgnd,'color','none','box','off');
+             set(lgnd,'color','none','box','off','fontsize',FS-2,'position',get(lgnd,'position')+[.03 0 0 0]);
+             lgnd.ItemTokenSize=[20 18]   
         end
         %-------------------PLOT FREQUENCY DISTRIBUTION--------------------
-%         if cond==1
-            TP = subplot(5,NComp,(c-1)+NComp*1+1); hold on;
-%         else
-%             subplot(5,NComp,(c-1)+NComp*1+1); hold on;
-%         end
+        if cond==1
+            FP(c) = axes('position',[.07+(c-1)*.23 .6 .18 .13]);%subplot(5,NComp,(c-1)+NComp*1+1); hold on;
+        else
+            axes(FP(c));
+        end
+        hold on;
         h = fill([Freq flip(Freq)],[model_temp_M{4}(:,cc)+model_temp_S{4}(:,cc); flip(model_temp_M{4}(:,cc)-model_temp_S{4}(:,cc))],lcolor{cond},'edgecolor','none');
         set(h,'facealpha',.75-.25*cond)
-        PL(cond) = plot(model_temp_M{4}(:,cc),'linewidth',1.5,'color',lcolor{cond},'linestyle',lstyle{cond});
-        TPP = get(TP,'position');
-        if c==1
-            
-            xlabel('Freq (Hz)')
-            YL = ylabel('Frequency');
-            set(YL,'position',get(YL,'position')+[-2.1 -.03 0])
-        end
+        PL(cond) = plot(model_temp_M{4}(:,cc),'linewidth',1.2,'color',lcolor{cond},'linestyle',lstyle{cond});
+        
+        
         if cc~=1
-            set(TP,'ytick',[]);
+            %set(FP(c),'yticklabel',[]);
         end
-        box on
+        box off
         if cond==2
-            set(TP,'position',TPP+[offs+(.012*c) 0 .02 -.02],'fontsize',FS,'ytick',0:.1:.2);
+            set(FP(c),'fontsize',FS,'ytick',0:.1:.2);
             if c==NComp
                 lgnd = legend(PL,connames);
-                set(lgnd,'color','none','box','off');
+                set(lgnd,'color','none','box','off','fontsize',FS-2,'position',get(lgnd,'position')+[.03 0 0 0]);
+                lgnd.ItemTokenSize=[20 18]
             end
         end
-        %title(['Consistency=' num2str(round(Comp_PerSig(cc,4),2))])
-        % ylim([0 .25])
+        set(gca,'TickDir','out','linewidth',1.5,'TickLength',[0.03 0.035],'XColor',[.2 .2 .2],'YColor',[.2 .2 .2])
+        %ylim([0.05 .25])
+        if cc==1
+            
+            XL = xlabel('Frequency (Hz)');
+            set(XL,'position',get(XL,'position')+[0 .005 0])
+            
+        end
+         
 
         % ----------------PLOT Hierarchy scores----------------------------
 
-        Con_temp = abs(cat(5,model_reord{:,con_mode}));
-        for perm = 1:size(Con_temp)
+        Con_temp = squeeze(abs(cat(5,model_reord{:,con_mode})));
+        for perm = 1:size(Con_temp,3)
             CN = zeros(36,1);
             CN(indTotal) = Con_temp(:,cc,perm);
             CN = reshape(CN,6,6);
@@ -227,18 +269,18 @@ for cond = 1:2
         end
 
         %-----------------plot the hierarchies-------------------------
-        if cond==2
-            CNP = subplot(5,NComp,(c-1)+NComp*4+1);
+        if cond==1
+            CNP = axes('position',[.07+(c-1)*.23 .05 .18 .15]);%subplot(5,NComp,(c-1)+NComp*4+1);
             if true
                 boxplot(squeeze(nanmean(nanmean(Hscore,1),4))','colors','k','symbol','')%,'PlotStyle','compact'
             else
                 boxplot(squeeze(Hscore)','colors','k','symbol','')%,'PlotStyle','compact'
             end
-            box on
+            box off
             if cc~=1
-                set(gca,'ytick',[]);
+                %set(gca,'yticklabel',[]);
             end
-            box on
+            box off
             xtickangle(45)
             set(gca,'xtick',1:6,'xticklabel',ROISN);
 
@@ -246,17 +288,256 @@ for cond = 1:2
             for j=1:length(h) 
                 patch(get(h(j),'XData'),get(h(j),'YData'),Colors(numel(ROIs)-j+1,:),'FaceAlpha',.8);
             end 
+
             if cc==1
-                set(CNP,'position',get(CNP,'position')+[offs+(.01*c) -0.0 .03 .025],'fontsize',FS);
+                set(CNP,'fontsize',FS,'TickDir','out','linewidth',1.2,'TickLength',[0.03 0.035],'XColor',[.2 .2 .2],'YColor',[.2 .2 .2]);
             else
-                set(CNP,'position',get(CNP,'position')+[offs+(.01*c)+.015 -0.0 0.015 .025],'fontsize',FS);
+                set(CNP,'fontsize',FS,'TickDir','out','linewidth',1.2,'TickLength',[0.03 0.035],'XColor',[.2 .2 .2],'YColor',[.2 .2 .2]);
             end
             if cc==1
-                YL = ylabel('Hierarchy Score');
-                set(YL,'position',get(YL,'position')+[-.5 0 0])
+                
+                axes('position',[.02 .78 .02 .15]);
+                text(0, .5,'Laminar Layers','fontsize',FS,'HorizontalAlignment' ,'center','rotation',90);
+                axis off;
+                
+                axes('position',[.02 .6 .02 .15]);
+                text(0, .5,'Frequency','fontsize',FS,'HorizontalAlignment' ,'center','rotation',90);
+                axis off;
+                
+                axes('position',[.02 .32 .02 .18]);
+                text(0, .5,'Evoked change (%)','fontsize',FS,'HorizontalAlignment' ,'center','rotation',90);
+                axis off;
+                
+                
+                axes('position',[.02 .03 .02 .18]);
+                text(0, .5,'Hierarchy Score','fontsize',FS,'HorizontalAlignment' ,'center','rotation',90);
+                axis off;
+                
             end
+            
         end
     end
 end
 export_fig(FIG,fullfile(FigPath,[FileName{1} '_PARAFAC_N' num2str(NComp) '_Bootstrap_HarrisM']),'-pdf','-r200')
+%% variance explained over time
+close;
+Freq = 1:100;
+con_mode = 1;
+% plotting params
+offs = -.06;
+FS = 12;
+FIG = figure(1);
+set(FIG,'unit','inch','position',[0 0 10 8],'color','w')
+lstyle = {'-','-'};
+lcolor = {'k',[.5 .5 .5]};
+connames = {'Contrast = 0.8','Contrast = 0.1'};
+Compcol = brewermap(10,'Paired');
+Compcol = Compcol([8 6 10 2],:);
 
+pre_win = find(temp_time<-0.0 & temp_time>-0.5);
+for cond = 1:2
+    
+    Model_reord =   PARRES{cond}.Model_reord;
+    Comp_ord    =   PARRES{cond}.Comp_ord;
+    % temporal dynamics: significance
+    M_temp = cellfun(@(x) (x{5}),Model_reord,'uni',false);
+    M_temp = cellfun(@(x) ((x)),M_temp,'uni',false);
+    M_temp = cat(3,M_temp{:});
+    %M_temp = M_temp-mean(M_temp(pre_win,:,:));
+
+    M_vars = mean(M_temp(:,:,:),3);
+    S_vars = var(M_temp(:,:,:),[],3);
+    subplot(2,2,cond*2-1),hold on;
+    
+    for c = 1:NComp
+         
+        if c==1
+            MData = ((M_vars(:,c)./sum(M_vars,2)))*100-20;
+            
+        else
+           MData = ((M_vars(:,c)./sum(M_vars,2)))*100;
+        end
+        h = fill([temp_time flip(temp_time)],...
+             [MData+S_vars(:,c); flip(MData-S_vars(:,c))],Compcol(c,:),'edgecolor','none');
+             set(h,'facealpha',.5)
+        P(c) = plot(temp_time,MData,'linewidth',1.5,'color',Compcol(c,:));
+    end
+    
+    ylim([7 47])
+    vline(0,'k--')
+    hline(25,'k-')
+    set(gca,'ytick',10:5:45,'yticklabel',[10:5:20 45:5:65])
+    if cond ==2
+        LG = legend(P,'SubNet 1','SubNet 2','SubNet 3','SubNet 4');
+        set(LG,'box','off')
+        xlabel('Time (s)')
+        ylabel('Variance Explained %')
+        set(gca,'position',get(gca,'position')+[0 .04 0 0])
+    end
+    
+    set(gca,'fontsize',FS,'TickDir','out','linewidth',1.2,'TickLength',[0.02 0.035],'XColor',[.2 .2 .2],'YColor',[.2 .2 .2])
+    set(gca,'position',get(gca,'position')+[-0.04 .0 0 0])
+    box off
+    axis tight;
+    title(connames{cond})
+    xlim([-.2 1])
+end
+%export_fig(FIG,fullfile(FigPath,[FileName{1} '_PARAFAC_N' num2str(NComp) '_Bootstrap_Variance']),'-pdf','-r200')
+
+
+% Estimate beta exponent for the component #1
+% FIG = figure;
+% set(FIG,'unit','inch','position',[1 1 4 6],'color','w')
+%FS = 14;
+
+% define the power law function to fit
+%model_fun.power_law = @(p,x) ( (p(2)*x+1).^-p(1)) ;
+model_fun.power_law = @(p,x) ( p(2)*(x).^-p(1)) ;
+model_fun.expo = @(p,x)( p(1) *exp(-p(1)*x) );
+model_fun.log_norm = @(p,x) ((1./(x*p(2)*sqrt(2*pi))).* exp(-(log(x)-p(1)).^2./(2*(p(2).^2))));
+
+Conds = {'Contrast = 0.8','Contrast = 0.1'};
+for comp = 1
+    for C = 1:2
+        for b = 1:420
+            P_test(b,:) = PARRES{C}.Model_reord{b}{4}(:,comp);
+            opts = statset('nlinfit');
+            opts.RobustWgtFun = 'bisquare';
+            [this_p(:,b),R,J,CovB,MSE(b)] =nlinfit(Freq(1:end),P_test(b,1:end),model_fun.power_law,[1.,1],opts);
+            %[this_p(:,b),R,J,CovB,MSE(b)] =nlinfit(Freq(1:end),P_test(b,1:end),model_fun.log_norm,[4.,3],opts);
+
+        end
+
+        % Plot the results
+        subplot(2,2,C*2)
+        M = mean(log10(P_test));
+        SD = std(log10(P_test));
+        plot(log10(Freq),mean(log10(P_test)),'k','linewidth',1.5);hold on;
+        %plot((Freq),mean((P_test)),'k','linewidth',1.5);hold on;
+        h = fill(log10([Freq flip(Freq)]),[M+SD flip(M-SD)],'k','edgecolor','none');
+        set(h,'facealpha',.3)
+
+        %y = (mean(this_p(2,:),2)*Freq+1).^-(mean(this_p(1,:),2)) ;
+        y = arrayfun(@(x) model_fun.power_law(this_p(:,x),Freq),1:420,'uni',false);
+        y = cat(1,y{:});
+
+        PL = plot(log10(Freq),log10(mean(y)),'--r','linewidth',1.5);hold on;
+       % PL = plot((Freq),(mean(y)),'--r','linewidth',1.5);hold on;
+        F = [1 2 5 10 20 40 70 100];
+        set(gca,'xtick',log10(F),'xticklabel',F,'ytick',-1.5:.5:-.5,'yticklabel',round(10.^(-1.5:.2:-.5),2));
+        LG = legend(PL,['\beta = ' num2str(round(mean(this_p(1,:)),2))]);
+        set(LG,'box','off')
+        
+        
+        title(Conds{C})
+        axis tight
+        box off
+        set(gca,'fontsize',FS,'TickDir','out','linewidth',1.2,'TickLength',[0.02 0.035],'XColor',[.2 .2 .2],'YColor',[.2 .2 .2])
+        if C==2
+            xlabel('Frequency (Hz)')
+            ylabel('Normalized Loading')
+            set(gca,'position',get(gca,'position')+[0 .04 0 0])
+        end
+   
+    end
+end
+% subplot(2,1,2)
+% plot((Freq),mean((P_test)));hold on;
+% plot((Freq),y,'r');hold on;
+export_fig(FIG,fullfile(FigPath,[FileName{1} '_PARAFAC_N' num2str(NComp) '_Bootstrap_BetaExponentVariance']),'-pdf','-r200')
+% Now let's fit an exponential
+
+
+%% Reconstruct the data
+
+for cond = 1:2
+    
+    Model_reord =   PARRES{cond}.Model_reord;
+    for m = 1:numel(Model_reord)
+        m
+        Data = Loading2Data(Model_reord{m});
+        Data = cellfun(@(x) mean(mean(mean(mean(x(:,:,:,:,temp_time<0),2),3),4),5),Data,'uni',false);
+        Data_con{cond}(:,:,m) = cat(2,Data{:});
+    end
+end
+%% RF distance analysis, carefull: keep the connections from the same layer
+ % first extract the loadings of between area connections
+ Freq = 1:100;
+con_mode = 1;
+Compcol = brewermap(10,'Paired');
+Compcol = Compcol([8 6 10 2],:);
+%close ;
+ FIG1 = figure(1);
+ set(FIG1,'unit','inch','position',[0 0 10 4],'color','w')
+ 
+ FIG2 = figure(2);
+ set(FIG2,'unit','inch','position',[0 0 10 10],'color','w')
+ for cond = 1:2
+    
+    Model_reord =   PARRES{cond}.Model_reord;
+    model_reord =   cat(1,Model_reord{:}); 
+    Con_temp    =   squeeze(abs(cat(5,model_reord{:,con_mode})));
+    for c=1:NComp
+        for b   =   1:size(Con_temp,3)
+            CN  =   zeros(36,1);
+             CN(indTotal)    = Con_temp(:,c,b);
+             CNL(:,:,b)      = reshape(CN,6,6);
+%             DAI =   (CN'-CN)./(CN+CN');
+
+%             DAIL(:,:,b)     = DAI;
+             CN(indTotal)    = Data_con{cond}(:,c,b); 
+             CNL(:,:,b)      = reshape(CN,6,6);
+        end
+        dists   = PARRES{cond}.DistanceBoots.RFDists;
+        RFNan   = PARRES{cond}.DistanceBoots.RFDists_nans(:,:,4,:);
+        d       = squeeze((dists(:,:,4,:)));
+        XY      =[];
+        XYM     =[];
+        for roi1 = 1:NROIs
+            for roi2 = roi1+1:NROIs
+                if roi1~=roi2
+                    x   = squeeze(d(roi1,roi2,~isnan(d(roi1,roi2,:)) & CNL(roi1,roi2,:)~=0 & RFNan(roi1,roi2,:)<4))*10;
+                    y   = squeeze(CNL(roi1,roi2,~isnan(d(roi1,roi2,:)) & CNL(roi1,roi2,:)~=0 & RFNan(roi1,roi2,:)<4));
+                    XY  = [XY; [x(:) y(:)]];
+                    XYM = [XYM; [mean(x) mean(y)]];
+                    % individual connections
+                     [CR(roi1,roi2,c,cond),PR(roi1,roi2,c,cond)] = corr(x,y);
+                     p = polyfit(x,y,1);
+                     x1 = linspace(0,60);
+                     y1 = polyval(p,x1);
+%                      if cond==1
+%                          figure(2)
+%                          subplot(NROIs,NROIs,roi1+(roi2-1)*NROIs);hold on;
+%     %                     scatter(x,y,15,'filled','MarkerFaceAlpha',.1,'MarkerEdgeAlpha',.2);
+%                          plot(x1,y1,'--','linewidth',1.5,'color',Compcol(c,:))
+%     %                     xlim([0 5])
+%                      end
+                end
+            end
+        end
+        %-----------------figure 1-all point-------------------------------
+        figure(1);
+        subplot(2,NComp,c+(cond-1)*NComp);hold on;
+        %XY(isnan(XY(:,2)),:)=[];
+        scatter(XY(:,1),XY(:,2),10,'filled','MarkerFaceAlpha',.1,'MarkerEdgeAlpha',.2);
+       [C,P] = corr(XY(:,1),XY(:,2));
+        title(['Corr=' num2str(round(C,2)) ', P=' num2str(round(P,2))]);
+        p = polyfit(XY(:,1),XY(:,2),1);
+        x1 = linspace(0,60);
+        y1 = polyval(p,x1);
+        plot(x1,y1,'k--','linewidth',1.8)
+        if c==1
+            ylim([0 .03])
+            if cond==2
+                xlabel('RF Distance')
+                ylabel('iPDC')
+            end
+        else    
+            ylim([0 .01])
+        end
+        %------------------------------------------------------------------
+    end
+ end
+%squeeze(mean(mean(squeeze(CR).*squeeze(PR<.05),1),2))
+ 
+export_fig(FIG1,fullfile(FigPath,['PARAFAC_RFDistance_Corr_Overall_prestim']),'-pdf','-r200');

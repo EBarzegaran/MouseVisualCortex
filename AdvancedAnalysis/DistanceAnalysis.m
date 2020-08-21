@@ -1,6 +1,6 @@
-clear;clc;
+%clear;clc;
 
-addpath(genpath(fileparts(mfilename('fullpath'))));
+addpath(genpath(fileparts(fileparts(mfilename('fullpath')))));
 clear; clc;
 FileName = 'drifting_gratings_75_repeats__contrast0-8_iPDC_Mord15_ff098';
 Path = '/Users/elhamb/Documents/Data/AllenBrainObserver/preliminary_results/Averaged/Fullmodel/';
@@ -24,7 +24,7 @@ StokALL = RFDistanceEstimate(StokALL,Probe_all);
 
 %% reshape all the PDCs and distances and then correlate them
 
-DistancePDCcorr(StokALL,1,fullfile(Path,'DistancePlot'),FileName);
+DistancePDCcorr2(StokALL,1,fullfile(Path,'DistancePlot'),FileName);
 
 RFPDCcorr(StokALL,.05,fullfile(Path,'DistancePlot'),FileName);
 

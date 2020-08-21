@@ -1,10 +1,11 @@
 function PARAFAC_FC(StokALL,NComp,BootIDs,nboots,ROIs,DataPath,FigPath,FileName)
 
+
 if ~exist([FileName 'PARAFAC_covtemp_' num2str(NComp) '.mat'],'file')
     for b = 1:nboots
             clear Stok_sample;
             % make the sub-sample stok structure
-            for s = 1:bootsize
+            for s = 1:size(BootIDs,2)
                 Stok_sample.(['S' num2str(s)]) = StokALL.(BootIDs{b,s});
             end
 
@@ -32,7 +33,7 @@ if ~exist([FileName 'PARAFAC_covtemp_' num2str(NComp) '.mat'],'file')
 
             TW = Time>-0.5 & Time<1;
             %[ssX,Corco,It] = pftest(5,permute(PDCPulled(:,:,:,TW,:),[4 1 2 3 5]),4,[2 2 2 0 0]);
-            [model_temp,it(b),err(b),corcondia(b)]=parafac(permute(PDCPulled(:,:,:,TW,:),[4 1 2 3 5]),NComp,[1e-7 10 0 0 NaN],repmat(2,1,NComp));% dimensions: connections x in x out x freq x time
+            [model_temp,it(b),err(b),corcondia(b)]=parafac(permute((PDCPulled(:,:,:,TW,:)),[4 1 2 3 5]),NComp,[1e-7 10 0 0 NaN],repmat(2,1,5));% dimensions: connections x in x out x freq x time
     %             PDCP = reshape(PDCPulled(:,:,:,:,:),6*6,size(PDCPulled,3),size(PDCPulled,4),size(PDCPulled,5));
     %             [model_temp,it(b),err(b),corcondia(b)]=parafac(permute(PDCP(:,:,TW,:),[3 1 2 4]),NComp,[1e-7 10 0 0 NaN],repmat(2,1,NComp));
             model{b} = model_temp([4 2 3 1]);
@@ -46,21 +47,24 @@ end
 % for example here I calculate correlation for the first mode : this does
 % not work
 % We have different modes of data ...
-for i = 1:nboots
-    i
-    for j = 1:nboots
-        [maps(i,j,:),sscore(i,j),Corrs(i,j,:),~,CorrPvals(i,j,:,:),Corrvals(i,j,:,:)] = PARAFACmodelComp(model{i},model{j});
+if ~exist([FileName 'PARAFAC_covtemp_' num2str(NComp) '_ExtraVar.mat'],'file')
+    for i = 1:nboots
+        i
+        for j = 1:nboots
+            [maps(i,j,:),sscore(i,j),Corrs(i,j,:),~,CorrPvals(i,j,:,:),Corrvals(i,j,:,:)] = PARAFACmodelComp(model{i},model{j});
+        end
     end
+
+    [~,RefInd] = max(mean(sscore)); % find the reference bootstrap
+    Corrsref = squeeze(Corrs(RefInd,:,:));
+
+    % reordering the models according to the reference component
+    for i = 1:nboots
+        [~,sscore_reord(i),Corrs_reord(i,:),Model_reord{i}] = PARAFACmodelComp(model{RefInd},model{i});
+    end
+else
+    load([FileName 'PARAFAC_covtemp_' num2str(NComp) '_ExtraVar.mat']);
 end
-
-[~,RefInd] = max(mean(sscore)); % find the reference bootstrap
-Corrsref = squeeze(Corrs(RefInd,:,:));
-
-% reordering the models according to the reference component
-for i = 1:nboots
-    [~,sscore_reord(i),Corrs_reord(i,:),Model_reord{i}] = PARAFACmodelComp(model{RefInd},model{i});
-end
-
 %% how much of variance are explained by each component
 %[1 4 3 2 5];
 
