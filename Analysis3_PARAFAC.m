@@ -55,7 +55,7 @@ Freq = 1:100;
 con_mode = 1;
 % plotting params
 offs = -.06;
-FS = 12;
+FS = 11;
 FIG = figure(1);
 set(FIG,'unit','inch','position',[0 0 2.5*NComp 9],'color','w')
 lstyle = {'-','-'};
@@ -90,12 +90,12 @@ for cond = 1:2
         
         %-----------------------------PLOT SOURCE--------------------------   
         if cond==2
-            axes('position',[.17+(c-1)*.23 .95 .18 .13])
+            axes('position',[.17+(c-1)*.23 .98 .18 .13])
             text(0, 0,['SubNetwork' num2str(c)],'fontsize',FS+1,'HorizontalAlignment' ,'center');
             axis off
                 
             %MS = subplot(5,NComp*2,(2*c-1)); 
-            MS = axes('position',[.07+(c-1)*.23 .78 .08 .13]);%axes('position',[.07+(c-1)*.23 .6 .18 .13]);
+            MS = axes('position',[.07+(c-1)*.23 .81 .08 .13]);%axes('position',[.07+(c-1)*.23 .6 .18 .13]);
             hold on;
             bar(model_temp_M{3}(end:-1:1,cc),.6,'FaceColor',[.5 .5 .5],'EdgeColor',[0 0 0]); %colormap(MS,jmaColors('coolhot'))
             errorbar(1:6,model_temp_M{3}(end:-1:1,cc),model_temp_S{3}(end:-1:1,cc),'.','color','k')
@@ -109,7 +109,7 @@ for cond = 1:2
             box off;      
             
             %--------------------------PLOT TARGET-----------------------------
-            MT = axes('position',[.18+(c-1)*.23 .78 .08 .13]);hold on;
+            MT = axes('position',[.18+(c-1)*.23 .81 .08 .13]);hold on;
             bar(model_temp_M{2}(:,cc),.6,'FaceColor',[.5 .5 .5],'EdgeColor',[0 0 0]); colormap(MS,jmaColors('coolhot'))
             errorbar(1:6,model_temp_M{2}(:,cc),model_temp_S{2}(:,cc),'.','color','k')
             %camroll(90)
@@ -130,9 +130,9 @@ for cond = 1:2
         temp_time_ms = temp_time;%*1000;
         M = model_temp_M{5}(:,cc); %M = (M-mean(M(temp_time<0,:)))./mean(M(temp_time<0,:))*100;
         if cond ==1
-            TP = axes('position',[.07+(c-1)*.23 .41 .18 .13]);
+            TP = axes('position',[.07+(c-1)*.23 .44 .18 .13]);
         else
-            TP = axes('position',[.07+(c-1)*.23 .2 .18 .13]);
+            TP = axes('position',[.07+(c-1)*.23 .23 .18 .13]);
         end
        % TP = subplot(5,NComp,(c-1)+NComp*2+1+((cond-1)*NComp)); 
         hold on;
@@ -145,6 +145,7 @@ for cond = 1:2
         vline(0,'k--');
         hline(0,'c--');
         set(TP,'fontsize',FS,'TickDir','out','linewidth',1.2,'TickLength',[0.03 0.035],'XColor',[.2 .2 .2],'YColor',[.2 .2 .2])
+        ytickangle(90);
         %xtickangle(30)
         if c==1 && cond==2
             XL = xlabel('Time (s)');
@@ -182,17 +183,18 @@ for cond = 1:2
                 if cond ==1
                     y = ones(numel(x),1)'*120;
                 else
-                    y = ones(numel(x),1)'*100;
+                    y = ones(numel(x),1)'*120;
                 end
                 z = zeros(size(x));
                 col = abs(Tstat(SigRes,cc))';  % This is the color, vary with x in this case.
-                surface([x;x],[y;y],[z;z],[col;col],...
-                        'facecol','no',...
-                        'edgecol','interp',...
-                        'linew',8); 
-                colormap(jmaColors('hotcortex'));
-                caxis([-max(col)*.2 max(col)])
-                    
+%                 surface([x;x],[y;y],[z;z],[col;col],...
+%                         'facecol','no',...
+%                         'edgecol','interp',...
+%                         'linew',8); 
+%                 colormap(jmaColors('hotcortex'));
+%                 caxis([-max(col)*.2 max(col)])
+                F = fill([x flip(x)],[zeros(size(y))-40 y],'k','edgecolor','none');
+                set(F,'facealpha',.13)    
             end
         end
         
@@ -204,7 +206,7 @@ for cond = 1:2
         end
         %-------------------PLOT FREQUENCY DISTRIBUTION--------------------
         if cond==1
-            FP(c) = axes('position',[.07+(c-1)*.23 .6 .18 .13]);%subplot(5,NComp,(c-1)+NComp*1+1); hold on;
+            FP(c) = axes('position',[.07+(c-1)*.23 .63 .18 .13]);%subplot(5,NComp,(c-1)+NComp*1+1); hold on;
         else
             axes(FP(c));
         end
@@ -217,16 +219,23 @@ for cond = 1:2
         if cc~=1
             %set(FP(c),'yticklabel',[]);
         end
-        box off
+
         if cond==2
-            set(FP(c),'fontsize',FS,'ytick',0:.1:.2);
+            YLIM = ylim;
+
+            TICKS = 0:round(YLIM(2)/3,2):YLIM(2)*1.5;
+            set(FP(c),'fontsize',FS,'ytick', TICKS(1:end-1));
+            ylim([0 YLIM(2)-eps])
+            
             if c==NComp
                 lgnd = legend(PL,connames);
                 set(lgnd,'color','none','box','off','fontsize',FS-2,'position',get(lgnd,'position')+[.03 0 0 0]);
                 lgnd.ItemTokenSize=[20 18]
             end
         end
-        set(gca,'TickDir','out','linewidth',1.5,'TickLength',[0.03 0.035],'XColor',[.2 .2 .2],'YColor',[.2 .2 .2])
+        set(gca,'TickDir','out','linewidth',1.5,'TickLength',[0.03 0.035],'XColor',[.2 .2 .2],'YColor',[.2 .2 .2],...
+            'xtick',0:20:100);
+        ytickangle(90)
         %ylim([0.05 .25])
         if cc==1
             
@@ -235,7 +244,8 @@ for cond = 1:2
             
         end
          
-
+        box off;
+        
         % ----------------PLOT Hierarchy scores----------------------------
 
         Con_temp = squeeze(abs(cat(5,model_reord{:,con_mode})));
@@ -245,8 +255,9 @@ for cond = 1:2
             CN = reshape(CN,6,6);
 
             if true
-                DAI = (CN'-CN)./(CN+CN');
+                DAI = (CN'-CN)./(CN+CN');                
                 DAI(isnan(DAI))=0;
+                DAII = DAI;
                 %---------------------------- Bastos paper------------------------
                 % (1)rescale to -3 to 3
                  DAI = (DAI-min(DAI(:)))./(max(DAI(:))-min(DAI(:)));
@@ -270,18 +281,21 @@ for cond = 1:2
 
         %-----------------plot the hierarchies-------------------------
         if cond==1
-            CNP = axes('position',[.07+(c-1)*.23 .05 .18 .15]);%subplot(5,NComp,(c-1)+NComp*4+1);
+            CNP = axes('position',[.07+(c-1)*.23 .075 .18 .15]);%subplot(5,NComp,(c-1)+NComp*4+1);
             if true
                 boxplot(squeeze(nanmean(nanmean(Hscore,1),4))','colors','k','symbol','')%,'PlotStyle','compact'
             else
                 boxplot(squeeze(Hscore)','colors','k','symbol','')%,'PlotStyle','compact'
             end
-            box off
-            if cc~=1
-                %set(gca,'yticklabel',[]);
-            end
+             
+            %-----------------Alternative----------------------
+%             imagesc(DAII*-1);caxis([-1 1])
+%             colormap(jmaColors2('coolhotlight'))
+%             set(gca,'xtick',1:6,'xticklabel',ROISN,'ytick',1:6,'yticklabel',ROISN);
+            %-----------------Alternative----------------------
             box off
             xtickangle(45)
+            ytickangle(90)
             set(gca,'xtick',1:6,'xticklabel',ROISN);
 
             h = findobj(gca,'Tag','Box'); 
@@ -296,21 +310,22 @@ for cond = 1:2
             end
             if cc==1
                 
-                axes('position',[.02 .78 .02 .15]);
+                axes('position',[.02 .81 .02 .15]);
                 text(0, .5,'Laminar Layers','fontsize',FS,'HorizontalAlignment' ,'center','rotation',90);
                 axis off;
                 
-                axes('position',[.02 .6 .02 .15]);
+                axes('position',[.02 .63 .02 .15]);
                 text(0, .5,'Frequency','fontsize',FS,'HorizontalAlignment' ,'center','rotation',90);
                 axis off;
                 
-                axes('position',[.02 .32 .02 .18]);
+                axes('position',[.02 .35 .02 .18]);
                 text(0, .5,'Evoked change (%)','fontsize',FS,'HorizontalAlignment' ,'center','rotation',90);
                 axis off;
                 
                 
-                axes('position',[.02 .03 .02 .18]);
+                axes('position',[.02 .05 .02 .18]);
                 text(0, .5,'Hierarchy Score','fontsize',FS,'HorizontalAlignment' ,'center','rotation',90);
+                %text(0, .5,'DAI','fontsize',FS,'HorizontalAlignment' ,'center','rotation',90);
                 axis off;
                 
             end
@@ -456,12 +471,13 @@ for cond = 1:2
     for m = 1:numel(Model_reord)
         m
         Data = Loading2Data(Model_reord{m});
-        Data = cellfun(@(x) mean(mean(mean(mean(x(:,:,:,:,temp_time<0),2),3),4),5),Data,'uni',false);
+        Data = cellfun(@(x) (mean(mean(mean(mean(x(:,:,:,:,temp_time>0),2),3),4),5)),Data,'uni',false);
         Data_con{cond}(:,:,m) = cat(2,Data{:});
     end
 end
 %% RF distance analysis, carefull: keep the connections from the same layer
  % first extract the loadings of between area connections
+ close all;
  Freq = 1:100;
 con_mode = 1;
 Compcol = brewermap(10,'Paired');
@@ -479,14 +495,14 @@ Compcol = Compcol([8 6 10 2],:);
     Con_temp    =   squeeze(abs(cat(5,model_reord{:,con_mode})));
     for c=1:NComp
         for b   =   1:size(Con_temp,3)
-            CN  =   zeros(36,1);
-             CN(indTotal)    = Con_temp(:,c,b);
-             CNL(:,:,b)      = reshape(CN,6,6);
-%             DAI =   (CN'-CN)./(CN+CN');
-
-%             DAIL(:,:,b)     = DAI;
-             CN(indTotal)    = Data_con{cond}(:,c,b); 
-             CNL(:,:,b)      = reshape(CN,6,6);
+            CN  =   zeros(36,1);          
+              CN(indTotal)    = Data_con{cond}(:,c,b); 
+              CN              = reshape(CN,6,6);
+              CNL(:,:,b)      = CN;
+              
+%               DAI =   ((CN-CN')./(CN+CN'));
+%               DAIL(:,:,b)     = DAI;
+%               CNL(:,:,b)      =DAIL (:,:,b);
         end
         dists   = PARRES{cond}.DistanceBoots.RFDists;
         RFNan   = PARRES{cond}.DistanceBoots.RFDists_nans(:,:,4,:);
@@ -494,12 +510,19 @@ Compcol = Compcol([8 6 10 2],:);
         XY      =[];
         XYM     =[];
         for roi1 = 1:NROIs
-            for roi2 = roi1+1:NROIs
+%             if c<3
+                r2 = roi1+1:NROIs;
+%             else
+
+%             r2 = 1:roi1;%NROIs
+%                 r2 = 1:NROIs
+%             end
+            for roi2=r2 
                 if roi1~=roi2
                     x   = squeeze(d(roi1,roi2,~isnan(d(roi1,roi2,:)) & CNL(roi1,roi2,:)~=0 & RFNan(roi1,roi2,:)<4))*10;
                     y   = squeeze(CNL(roi1,roi2,~isnan(d(roi1,roi2,:)) & CNL(roi1,roi2,:)~=0 & RFNan(roi1,roi2,:)<4));
                     XY  = [XY; [x(:) y(:)]];
-                    XYM = [XYM; [mean(x) mean(y)]];
+                    XYM = [XYM; [nanmean(x) nanmean(y)]];
                     % individual connections
                      [CR(roi1,roi2,c,cond),PR(roi1,roi2,c,cond)] = corr(x,y);
                      p = polyfit(x,y,1);
@@ -515,29 +538,47 @@ Compcol = Compcol([8 6 10 2],:);
                 end
             end
         end
-        %-----------------figure 1-all point-------------------------------
         figure(1);
         subplot(2,NComp,c+(cond-1)*NComp);hold on;
-        %XY(isnan(XY(:,2)),:)=[];
-        scatter(XY(:,1),XY(:,2),10,'filled','MarkerFaceAlpha',.1,'MarkerEdgeAlpha',.2);
+        %-----------------figure 1-all point-------------------------------
+        hist3(XY,'CdataMode','auto','nbins',[20 20])
+%         xlabel('Distance')
+%         ylabel('iPDC')
+        colorbar
+        view(2)
+        axis xy;
+        
+        %------------------------------------------------------------------
+        
+%         XYM((isnan(XYM(:,2))),:)=[];
+%         scatter(XYM(:,1),XYM(:,2),10,'filled','MarkerFaceAlpha',.3,'MarkerEdgeAlpha',.2);
        [C,P] = corr(XY(:,1),XY(:,2));
-        title(['Corr=' num2str(round(C,2)) ', P=' num2str(round(P,2))]);
+       if isnan(C)
+           disp(C);
+       end
+        title(['Corr=' num2str(round(C,2)) ]);
         p = polyfit(XY(:,1),XY(:,2),1);
         x1 = linspace(0,60);
         y1 = polyval(p,x1);
-        plot(x1,y1,'k--','linewidth',1.8)
+        plot(x1,y1,'w--','linewidth',1.8)
+        plot(y1,x1,'w--','linewidth',1.8)
         if c==1
-            ylim([0 .03])
+            ylim([0 0.025])
             if cond==2
-                xlabel('RF Distance')
+                xlabel('Distance')
                 ylabel('iPDC')
             end
         else    
-            ylim([0 .01])
+           
+           ylim([0 0.01])
         end
+        xlim([0 60])
+%         ylim([-1 1]) 
+%         hline(0,'k--')
         %------------------------------------------------------------------
     end
  end
 %squeeze(mean(mean(squeeze(CR).*squeeze(PR<.05),1),2))
- 
-export_fig(FIG1,fullfile(FigPath,['PARAFAC_RFDistance_Corr_Overall_prestim']),'-pdf','-r200');
+ colormap('jet')
+export_fig(FIG1,fullfile(FigPath,['PARAFAC_RFDistance_Corr_Overall_poststim_iPDC_evoked']),'-pdf','-r200');
+%export_fig(FIG1,fullfile(FigPath,['PARAFAC_Distance_Corr_Overall_poststim_iPDC']),'-pdf','-r200');
