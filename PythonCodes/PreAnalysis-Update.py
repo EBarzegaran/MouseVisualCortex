@@ -66,7 +66,7 @@ for S_id in session_id:
         ProbeF.extract_probeinfo(session, lfp, probe_id, Resultspath,True)
 
         # extract and prepare the data for a condition
-        cond_name = 'gabors'    #'drifting_gratings_75_repeats'
+        cond_name = 'flashes'    #'drifting_gratings_75_repeats'
         Prestim = 0             # prestimulus time in sec
         down_rate = 5           # down sampling -> the original sampling rate is 1250 Hz
         ProbeF.prepare_condition(session, lfp, probe_id, cond_name, Resultspath, Prestim, down_rate)

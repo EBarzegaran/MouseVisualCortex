@@ -63,7 +63,11 @@ def prepare_condition(session, lfp, probe_id, cond_name, Resultspath, Prestim, d
     Times[Times.shape[0] - 1] = Times[Times.shape[0] - 2] * 2 - Times[Times.shape[0] - 3]
 
     lfp_cond = (results['lfp'])
-    lfp_cond = LFPF.bipolar(lfp_cond)  # LFPF.gaussian_filter_trials(lfp_cond, 1));
+    #
+    if lfp_cond == 'flashes':
+        lfp_cond = LFPF.csd(LFPF.gaussian_filter_trials(lfp_cond, 1))  # just in case of flashes for layer assignment
+    else:
+        lfp_cond = LFPF.bipolar(lfp_cond)
 
     Y = lfp_cond
     # Y = Y[intervals[intervals.shape[0]-3]:intervals[intervals.shape[0]-2]+1];
