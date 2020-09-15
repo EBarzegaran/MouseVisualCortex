@@ -11,7 +11,7 @@ end
 
 avdims = sort(avdims,'descend'); % sort it so it is straightforward for averaging: no problem if not squeeze the matrix
 
-if exist('rdiag','var') % remove diagonals in case of intra-area PDC
+if exist('rdiag','var') && rdiag==1% remove diagonals in case of intra-area PDC
     for c = 1:numel(PDC)
         for i = 1:size(PDC{c},1)
             PDC{c}(i,i,:,:,:) = NaN;
@@ -45,6 +45,7 @@ if isempty(facdims)
         for d2 = 1:size(PDC,2)
             for d3 = 1:size(PDC,3)
                 for d4 = find(round(time,2)==0,1):size(PDC,4)
+                    %PDCpres = mean(PDC(d1,d2,d3,TPres,:),4);
                     PDCpres = PDC(d1,d2,d3,TPres,:);
                     [~,P(d1,d2,d3,d4),ci(d1,d2,d3,d4,:),SS] = ttest2(squeeze(PDC(d1,d2,d3,d4,:)),PDCpres(:));
                     Tval(d1,d2,d3,d4) = SS.tstat;
@@ -68,8 +69,10 @@ if isempty(facdims)
             'figpath'   ,figpath,...
             'PThresh'   ,.01/2500,... %benferoni correction!
             'SThresh'   ,20,...
-            'Twin'      ,[0 1],...
+            'Twin'      ,[-.0 1],...
             'ColorM'    ,'jet');
+    else
+        FIG=[];
     end
 end
 

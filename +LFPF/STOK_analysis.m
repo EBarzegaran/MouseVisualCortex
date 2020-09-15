@@ -160,7 +160,7 @@ savefig = true;
 
 %% plot the average
 
-SpecEstim =true;
+SpecEstim =false;
 SignalROIAverage(session,opt.ROIs,savefig,Savepath,StimName,SpecEstim,opt.Freqs);    
 
 %% average the whole visual cortex networks

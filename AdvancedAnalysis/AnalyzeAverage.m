@@ -71,18 +71,20 @@ end
 
 for l1 = 1:6
     for l2 = 1:6
-            Ind = (0:(NROIs-1))*6+l1;
-            Ind2 = (0:(NROIs-1))*6+l2;
-        if l1~=l2
-            PDC_layer_avg(l1,l2,:,:) = squeeze(sum(sum(PDC(Ind,Ind2,:,TimeInd),1),2)./(numel(Ind)*numel(Ind2)));
-        else
-            Temp=zeros(size(PDC,3),sum(TimeInd));
-            for i=1:numel(Ind)
-                Temp = Temp+squeeze(PDC(Ind(i),Ind(i),:,TimeInd));
+        Ind = (0:(NROIs-1))*6+l1;
+        Ind2 = (0:(NROIs-1))*6+l2;
+        %PDC_layer_avg(l1,l2,:,:) = squeeze(sum(sum(PDC(Ind,Ind2,:,TimeInd),1),2)./(numel(Ind)*numel(Ind2)));
+        
+        Temp=zeros(size(PDC,3),sum(TimeInd));
+        ind=0;
+        for i=1:numel(Ind)
+            for j = Ind2(setdiff(1:6,i))
+            Temp = Temp+squeeze(PDC(Ind(i),j,:,TimeInd));
+            ind=ind+1;
             end
-            Temp = Temp./numel(Ind);
-            PDC_layer_avg(l1,l2,:,:) = Temp;
         end
+        Temp = Temp./ind;
+        PDC_layer_avg(l1,l2,:,:) = Temp;
     end
 end
 
@@ -96,7 +98,7 @@ imagesc(Time(TimeInd),Freq,squeeze(mean(mean(PDC_avg,1),2)));
 axis xy
 caxis([-10 50])
 colormap('jet')
-set(FIG1,'unit','inch','position',[1 1 5 2.8],'color','w')
+set(FIG1,'unit','inch','position',[1 1 7 2.8],'color','w')
 set(gca,'fontsize',FS)
 xlabel('Time(S)')
 ylabel('Frequency(Hz)')

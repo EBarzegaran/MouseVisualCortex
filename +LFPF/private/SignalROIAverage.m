@@ -100,7 +100,7 @@ COBJ = LFPF.RColors();
 Colors = COBJ.MatrixColors(ROIs,'SubColors');
 %---------------------------------------------------
 Times = Signal_Averaged.(ROIs{roi}).Times*1000;
-Xticks = arrayfun(@(x) find(round(Signal_Averaged.(ROIs{roi}).Times,2)*1000==x,1),[ 0:50:1000])+1;
+Xticks = arrayfun(@(x) find(round(Signal_Averaged.(ROIs{roi}).Times,2)*1000==x,1),[ 0:200:1000])+1;
 
 Yticks = arrayfun(@(x) ['L' num2str(x)],1:6,'uni',false);
 %--------------------------------------------------
@@ -126,21 +126,22 @@ for roi = 1:numel(ROIs)
         X = Signal_Averaged.(ROIs{roi}).Times*1000;
         Y = Signal(l,:)-Offset*l;
         Err = SignalErr(l,:)/sqrt(Signal_Averaged.(ROIs{roi}).Num);
-        fill([X X(end:-1:1)],[Y+Err Y(end:-1:1)-Err(end:-1:1)],Colors(roi,l,:),'facealpha',.3,'edgecolor','none');
+       % fill([X X(end:-1:1)],[Y+Err Y(end:-1:1)-Err(end:-1:1)],Colors(roi,l,:),'facealpha',.3,'edgecolor','none');
     end
     
     for l = 1:size(Signal,1)
         LG(l)=plot(Signal_Averaged.(ROIs{roi}).Times*1000,Signal(l,:)-Offset*l,'linewidth',1.5,'color',Colors(roi,l,:));
         MS(l) = mean(Signal(l,:)-Offset*l);
     end
-    %xlim([-100 1001])
-    xlim([40 401])
+    xlim([-100 1001])
+    %xlim([40 401])
     
     %title([ROI_names.(ROIs{roi}) ' - Averaged over ' num2str(Signal_Averaged.(ROIs{roi}).Num) ' sessions'])
-    title(ROI_names.(ROIs{roi}));
+    TL = title(ROI_names.(ROIs{roi}));
+    set(TL,'position',get(TL,'position')+[0 -.0001 0])
     
     if roi == numel(ROIs) 
-        xlabel('Time (msec)')
+        xlabel('Time (S)')
          %set(gca,'ytick',MS(end:-1:1),'yticklabel',Yticks(end:-1:1));
     else
         %set(gca,'ytick',MS(end:-1:1),'yticklabel',[]);
@@ -148,7 +149,7 @@ for roi = 1:numel(ROIs)
     vline(0.0,'k--')
     grid on;
   
-    set(gca,'ytick',MS(end:-1:1),'yticklabel',Yticks(end:-1:1),'xtick',Times(Xticks),'xticklabel',round(Times(Xticks)),'fontsize',15);
+    set(gca,'ytick',MS(end:-1:1),'yticklabel',Yticks(end:-1:1),'xtick',Times(Xticks),'xticklabel',round(Times(Xticks))/1000,'fontsize',14,'TickDir','out','linewidth',1.2,'TickLength',[0.02 0.035]);
     %set(gca,'position',get(gca,'position')+[0 0 0 0.02])
 %     if roi ==2
 %         L = legend(LG,arrayfun(@(x) ['L' num2str(x)],1:6,'uni',false));
@@ -157,9 +158,9 @@ for roi = 1:numel(ROIs)
 %     end
 end
 
-set(FIG,'color','w','unit','inch','position',[0 0 4 16])
+set(FIG,'color','w','unit','inch','position',[0 0 5 16])
 if savefig
-    export_fig(FIG,fullfile(Path,['Signal_Averaged_AllROIs_transient' SaveName]),'-pdf','-r200');
+  export_fig(FIG,fullfile(Path,['Signal_Averaged_AllROIs_transient' SaveName]),'-pdf');
 end
 
 %% plot the time domain results
@@ -187,7 +188,7 @@ for roi = 1:numel(ROIs)
     end
     set(gca,'fontsize',16,'xtick',Times(Xticks),'xticklabel',round(Times(Xticks)))
 end
-set(FIG,'color','w','unit','inch','position',[0 0 4 16])
+set(FIG,'color','w','unit','inch','position',[0 0 5 16])
 if savefig
     export_fig(FIG,fullfile(Path,['Signal_Averaged_AllROIs_Overlap2' SaveName]),'-pdf');
 end

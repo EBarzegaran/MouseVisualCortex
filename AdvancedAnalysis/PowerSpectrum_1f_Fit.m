@@ -1,5 +1,5 @@
 %% check the power spectrum maybe?
-%Question why nlinfit does nto work?
+%Question why nlinfit does not work?
 FileNames2 = {'Signal_PSD_drifting_gratings_75_repeats__contrast0-1_iPDC_Mord15.mat',...
     'Signal_PSD_drifting_gratings_75_repeats__contrast0-8_iPDC_Mord15.mat'};
 Path = '/Users/elhamb/Documents/Data/AllenBrainObserver/preliminary_results/Averaged/Fullmodel/';

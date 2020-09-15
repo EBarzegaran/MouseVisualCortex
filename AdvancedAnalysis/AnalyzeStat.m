@@ -20,7 +20,7 @@ clear StokALL;
 
 %% To indicate which part of the evoked PDC is significant
 for roi = 1:nROIs
-    [~,FIG1] = CompPostPre(PDC(roi,roi),[1],[],1,1,Time,Freq,['Output-intraPDC- ' ROIs{roi} '_' FileName],FigPath);
+    [stats,FIG1] = CompPostPre(PDC(roi,roi),[1],[],1,1,Time,Freq,['Output-intraPDC- ' ROIs{roi} '_' FileName],FigPath);
     [~,FIG2] = CompPostPre(PDC(setdiff(1:nROIs,roi),roi),[1],[],1,1,Time,Freq,['Output-interPDC- ' ROIs{roi} '_' FileName],FigPath);
 end
 
@@ -41,6 +41,21 @@ end
 
 [~,FIG2] = CompPostPre(PDCFB,[1],[],1,1,Time,Freq,['Output-interPDC-output -FB_' FileName],FigPath);
 [~,FIG2] = CompPostPre(PDCFB,[2],[],1,1,Time,Freq,['Output-interPDC-input -FB_' FileName],FigPath);
+%%
+% check separately the evoked FF and FB
+ind = 1;
+for roi1 = 1:numel(ROIs)
+    for roi2 = roi1+2:numel(ROIs)
+        %if roi1~=4 && roi2~=4
+            PDCFF{ind} = PDC{roi2,roi1};
+            PDCFB{ind} = PDC{roi1,roi2};
+            ind = ind+1;
+        %end
+    end
+end
+
+PDC_all = cat(2,PDCFF,PDCFB);
+[Stats,~] = CompPostPre(PDC_all,[1 2],[],1,1,Time,Freq,['High Contrast'],FigPath);
 
 %% To compare the evoked PDC in different connections intra vs. inter
 

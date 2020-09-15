@@ -60,7 +60,7 @@ FIG = figure(1);
 set(FIG,'unit','inch','position',[0 0 2.5*NComp 9],'color','w')
 lstyle = {'-','-'};
 lcolor = {'k',[.5 .5 .5]};
-connames = {'Contrast=.8','Contrast=.1'};
+connames = {'High Contrast','Low Contrast'};
         
 for cond = 1:2
     
@@ -116,7 +116,7 @@ for cond = 1:2
         if cond==2
            
             axes('position',[.17+(c-1)*.23 .98 .18 .13])
-            text(0, 0,['SubNetwork' num2str(c)],'fontsize',FS+1,'HorizontalAlignment' ,'center');
+            text(0, 0,['Network' num2str(c)],'fontsize',FS+1,'HorizontalAlignment' ,'center');
             axis off
                  
             MS = axes('position',[.07+(c-1)*.23 .81 .08 .13]);%axes('position',[.07+(c-1)*.23 .6 .18 .13]);
@@ -175,7 +175,7 @@ for cond = 1:2
             title('Target','fontweight','normal')
             if cc ==1
                 XL = ylabel('Strength');
-                set(XL,'position',get(XL,'position')-[.5 .8 0])
+                set(XL,'position',get(XL,'position')-[.05 .8 0])
             end
             box off;
             
@@ -251,7 +251,7 @@ for cond = 1:2
             [~,PVal(t,cc),~,stat_temp] = ttest2(M_temp(:,cc,t),Pres(:));
             Tstat(t,cc) = stat_temp.tstat;
         end
-        PVal(temp_time<.03)=1;
+        PVal(temp_time<.03,:)=1;
         SigRes1 = PVal(:,cc)<.001;
         CC = bwconncomp(SigRes1);
         for i = 1:numel(CC.PixelIdxList)
@@ -423,7 +423,7 @@ for cond = 1:2
                 axis off;
                 
                 axes('position',[.02 .63 .02 .15]);
-                text(0, .5,'Frequency','fontsize',FS,'HorizontalAlignment' ,'center','rotation',90);
+                text(0, .5,'Frequency Loading','fontsize',FS,'HorizontalAlignment' ,'center','rotation',90);
                 axis off;
                 
                 axes('position',[.02 .35 .02 .18]);
@@ -552,6 +552,8 @@ for comp = 1:NComp
             [this_p{2}(:,b),~,~,~,MSE(b,2)] =nlinfit( Freq(1:end),Pdf,model_fun.lognormal,[4.,5,.1,1],opts);
             [this_p{3}(:,b),~,~,~,MSE(b,3)] =nlinfit(Freq(1:end),Pdf,model_fun.normal,[50,10,.1,1],opts);
 
+            
+
         end
 
          % Plot the results
@@ -583,8 +585,12 @@ for comp = 1:NComp
              PL(2) = plot(Freq(5:end),mean(y(:,5:end)),'--r','linewidth',1.5);hold on;
              ylim([0 .3])
          end
-         if comp==3
-             comp
+         if comp>2
+             HFreq = .1:.1:100;
+             y = arrayfun(@(x) model_fun.(Model_names{ind_fun})(this_p{ind_fun}(:,x),HFreq),Is(good(:,ind_fun)==0),'uni',false);
+             y = nanmean(cat(1,y{:}));
+             HM = mean([mean(y),max(y)]);
+             FWHM = HFreq(find(diff(sign(y-HM))))
          end
         %title(Conds{C})
         Params = nanmean(this_p{ind_fun}(:,good(:,ind_fun)==0),2);
@@ -595,7 +601,8 @@ for comp = 1:NComp
         end
         
         box off
-         set(gca,'fontsize',FS,'TickDir','out','linewidth',1.2,'TickLength',[0.02 0.035],'XColor',[.2 .2 .2],'YColor',[.2 .2 .2])
+         set(gca,'fontsize',FS,'TickDir','out','linewidth',1.2,'TickLength',[0.02 0.035],'XColor',[.2 .2 .2],'YColor',[.2 .2 .2],...
+             'xtick',0:20:100)
         if C==2 && comp==1
             
             xlabel('Frequency (Hz)')
@@ -627,6 +634,51 @@ for comp=1:4
 end
 
 export_fig(FIG,fullfile(FigPath,[FileName{1} '_PARAFAC_N' num2str(NComp) '_FrequencyFit']),'-pdf','-r200')
+%% FFT on the temporal loadings
+FIG = figure;
+set(FIG,'unit','inch','color','w','position',[5 5 10 4])
+
+for comp = 1:NComp
+    for C = 1:2
+        clear P_test MSE this_p good;
+        for b = 1:nb
+            
+            P = PARRES{C}.Model_reord{b}{5}(:,comp);
+            P_test(b,:) = P./norm(P);
+        end
+        Pfft = fft(P_test,[],2);
+        L = 375;
+        Fs = 250;
+        f = Fs*(0:(L/2))/L;
+        subplot(2,4,comp+(C-1)*4);hold on;
+        M = mean(abs(Pfft(:,3:100)).^2);
+        plot(f(3:100),M,'linewidth',1.5,'color','k');
+        %bar(f(3:100),mean(abs(Pfft(:,3:100)).^2));
+        S = std(abs(Pfft(:,3:100)).^2);
+        h = fill([f(3:100) flip(f(3:100))],[M+S flip(M-S)],'k','edgecolor','none');
+        set(h,'facealpha',.5)
+        
+        YL = ylim;
+        ylim([0 .4])
+        if C==1
+            title(['Network' num2str(comp)])
+        end
+        set(gca,'fontsize',FS)
+        if comp==1
+            ylabel(connames{C})
+            if C==2
+                xlabel('Frequency(Hz)')
+            end
+        end
+        %
+        xlim([2 20])
+    end
+end
+
+axes('position',[0.05 ,.5, .1,.1]);
+text(.0,.5,'FFT of Temporal Loading','rotation',90,'HorizontalAlignment','Center','fontsize',FS)
+axis off
+export_fig(FIG,fullfile(FigPath,[FileName{1} '_PARAFAC_N' num2str(NComp) '_TemporalFFT']),'-pdf','-r200')
 
 %% Reconstruct the data
 
