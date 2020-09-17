@@ -4,7 +4,7 @@ addpath(genpath(fileparts(mfilename('fullpath'))));
 addpath(genpath(fileparts(fileparts(mfilename('fullpath')))));
 %addpath(genpath('E:\Elham\Codes\NonGit\nway331'));% add the nway toolbox
 addpath(genpath('/Users/elhamb/Documents/Codes/NonGit/nway331'));% add the nway toolbox
-clear; clc;
+% clear; clc;
 FileName = {'drifting_gratings_75_repeats__contrast0-8_iPDC_Mord15_ff098','drifting_gratings_75_repeats__contrast0-1_iPDC_Mord15_ff098'};
 DataPath = 'Data_Temp';
 
@@ -680,122 +680,84 @@ text(.0,.5,'FFT of Temporal Loading','rotation',90,'HorizontalAlignment','Center
 axis off
 export_fig(FIG,fullfile(FigPath,[FileName{1} '_PARAFAC_N' num2str(NComp) '_TemporalFFT']),'-pdf','-r200')
 
-%% Reconstruct the data
+%% RF distance analysis, carefull: keep the connections from the same layer
+
+% Reconstruct the data
 
 for cond = 1:2
     
     Model_reord =   PARRES{cond}.Model_reord;
     for m = 1:numel(Model_reord)
         m
-        Data = Loading2Data(Model_reord{m});
+        Data = Loading2Data(Model_reord{m}([1 4 5]));
         Data = cellfun(@(x) (mean(mean(mean(mean(x(:,:,:,:,temp_time>0),2),3),4),5)),Data,'uni',false);
         Data_con{cond}(:,:,m) = cat(2,Data{:});
     end
 end
-%% RF distance analysis, carefull: keep the connections from the same layer
- % first extract the loadings of between area connections
- close all;
- Freq = 1:100;
-con_mode = 1;
-Compcol = brewermap(10,'Paired');
-Compcol = Compcol([8 6 10 2],:);
-%close ;
- FIG1 = figure(1);
- set(FIG1,'unit','inch','position',[0 0 10 4],'color','w')
- 
- FIG2 = figure(2);
- set(FIG2,'unit','inch','position',[0 0 10 10],'color','w')
- for cond = 1:2
+%% Mixed-effect model
+% things to check:  
+%(1) centering the data?
+%(2) log-transform or not?
+%(3) time-freuency plots? then what about layers?
+clc
+nb  =1:500;% number of boots to consider
+VarNames = arrayfun(@(x) ['b' num2str(x)],nb,'uni',false);
+ConNames = arrayfun(@(x) ['C' num2str(x)],1:30,'uni',false);
+
+dists   = reshape(squeeze(mean(PARRES{Cond}.DistanceBoots.RFDists(:,:,:,:),3)),36,500);
+dists   = dists(indTotal,nb);
+%------------------------- reconstruct the data---------------------------
+for cond = 1:2
     
     Model_reord =   PARRES{cond}.Model_reord;
-    model_reord =   cat(1,Model_reord{:}); 
-    Con_temp    =   squeeze(abs(cat(5,model_reord{:,con_mode})));
-    for c=1:NComp
-        for b   =   1:size(Con_temp,3)
-            CN  =   zeros(36,1);          
-              CN(indTotal)    = Data_con{cond}(:,c,b); 
-              CN              = reshape(CN,6,6);
-              CNL(:,:,b)      = CN;
-              
-%               DAI =   ((CN-CN')./(CN+CN'));
-%               DAIL(:,:,b)     = DAI;
-%               CNL(:,:,b)      =DAIL (:,:,b);
-        end
-        dists   = PARRES{cond}.DistanceBoots.RFDists;
-        RFNan   = PARRES{cond}.DistanceBoots.RFDists_nans(:,:,4,:);
-        d       = squeeze((dists(:,:,4,:)));
-        XY      =[];
-        XYM     =[];
-        for roi1 = 1:NROIs
-%             if c<3
-                r2 = roi1+1:NROIs;
-%             else
+    for t = 150:375
+        t
+        tic
+        for f = 1:80
+            for m = 1:numel(Model_reord)
+                 Data(:,:,m) = Model_reord{m}{1}.*Model_reord{m}{4}(f,:).*Model_reord{m}{5}(t,:);
+            end
+            %----------------------fit regression model--------------------
+            for C = 1:4
+                %(1) Format the data into table
+                Data_table = array2table((squeeze(Data(:,C,nb))),'VariableNames',VarNames);
+                Data_table = [table(ConNames','VariableNames',{'Conn'}) Data_table];
+                Data_table.Conn = categorical(Data_table.Conn);
+                Table_S = stack(Data_table,VarNames,...
+                          'NewDataVariableName','iPDC',...
+                          'IndexVariableName','Boots');
 
-%             r2 = 1:roi1;%NROIs
-%                 r2 = 1:NROIs
-%             end
-            for roi2=r2 
-                if roi1~=roi2
-                    x   = squeeze(d(roi1,roi2,~isnan(d(roi1,roi2,:)) & CNL(roi1,roi2,:)~=0 & RFNan(roi1,roi2,:)<4))*10;
-                    y   = squeeze(CNL(roi1,roi2,~isnan(d(roi1,roi2,:)) & CNL(roi1,roi2,:)~=0 & RFNan(roi1,roi2,:)<4));
-                    XY  = [XY; [x(:) y(:)]];
-                    XYM = [XYM; [nanmean(x) nanmean(y)]];
-                    % individual connections
-                     [CR(roi1,roi2,c,cond),PR(roi1,roi2,c,cond)] = corr(x,y);
-                     p = polyfit(x,y,1);
-                     x1 = linspace(0,60);
-                     y1 = polyval(p,x1);
-%                      if cond==1
-%                          figure(2)
-%                          subplot(NROIs,NROIs,roi1+(roi2-1)*NROIs);hold on;
-%     %                     scatter(x,y,15,'filled','MarkerFaceAlpha',.1,'MarkerEdgeAlpha',.2);
-%                          plot(x1,y1,'--','linewidth',1.5,'color',Compcol(c,:))
-%     %                     xlim([0 5])
-%                      end
-                end
+                % Distance data 
+                Dist_table = array2table((squeeze(dists)),'VariableNames',VarNames);
+                Dist_table = [table(ConNames','VariableNames',{'Conn'}) Dist_table];
+                Dist_table.Conn = categorical(Dist_table.Conn);
+                DTable_S = stack(Dist_table,VarNames,...
+                          'NewDataVariableName','Dist',...
+                          'IndexVariableName','Boots');
+
+                TTable = join(Table_S,DTable_S,'keys',{'Conn','Boots'});
+
+                TTable = TTable(~isnan(TTable.iPDC) & ~isnan(TTable.Dist),:);
+                TTable = TTable(~isinf(TTable.iPDC) & ~isinf(TTable.Dist),:);
+
+                %------------(2) Apply mixed-effect model with  random effect on intercept and slope
+                lme_intercept_slope = fitlme(TTable,'iPDC ~ 1 + Dist + (1+Dist|Conn)');
+                lme_slope = fitlme(TTable,'iPDC ~ 1 + Dist +(Dist-1|Conn)');
+                Statres(cond,C,f,t,:,:)=[lme_intercept_slope.Coefficients.Estimate lme_intercept_slope.Coefficients.pValue];
+
+                %[~,~,rEffects] = randomEffects(lme_intercept_slope);
+                %-------------(3) Apply fixed-effect model---------------------------
+                lm = fitlme(TTable,'iPDC ~ 1 + Dist');
+                %--------------------(4) Compare models-----------------------------
+                %Comp(cond,C,f,t,:) =  compare(lm, lme_intercept_slope).pValue;
+
             end
         end
-        figure(1);
-        subplot(2,NComp,c+(cond-1)*NComp);hold on;
-        %-----------------figure 1-all point-------------------------------
-        hist3(XY,'CdataMode','auto','nbins',[20 20])
-%         xlabel('Distance')
-%         ylabel('iPDC')
-        colorbar
-        view(2)
-        axis xy;
-        
-        %------------------------------------------------------------------
-        
-%         XYM((isnan(XYM(:,2))),:)=[];
-%         scatter(XYM(:,1),XYM(:,2),10,'filled','MarkerFaceAlpha',.3,'MarkerEdgeAlpha',.2);
-       [C,P] = corr(XY(:,1),XY(:,2));
-       if isnan(C)
-           disp(C);
-       end
-        title(['Corr=' num2str(round(C,2)) ]);
-        p = polyfit(XY(:,1),XY(:,2),1);
-        x1 = linspace(0,60);
-        y1 = polyval(p,x1);
-        plot(x1,y1,'w--','linewidth',1.8)
-        plot(y1,x1,'w--','linewidth',1.8)
-        if c==1
-            ylim([0 0.025])
-            if cond==2
-                xlabel('Distance')
-                ylabel('iPDC')
-            end
-        else    
-           
-           ylim([0 0.01])
-        end
-        xlim([0 60])
-%         ylim([-1 1]) 
-%         hline(0,'k--')
-        %------------------------------------------------------------------
+        toc
     end
- end
-%squeeze(mean(mean(squeeze(CR).*squeeze(PR<.05),1),2))
- colormap('jet')
-export_fig(FIG1,fullfile(FigPath,['PARAFAC_RFDistance_Corr_Overall_poststim_iPDC_evoked']),'-pdf','-r200');
-%export_fig(FIG1,fullfile(FigPath,['PARAFAC_Distance_Corr_Overall_poststim_iPDC']),'-pdf','-r200');
+end
+
+
+
+%export_fig(FIG1,fullfile(FigPath,['PARAFAC_RFDistance_Corr_Overall_poststim_iPDC_evoked']),'-pdf','-r200');
+
