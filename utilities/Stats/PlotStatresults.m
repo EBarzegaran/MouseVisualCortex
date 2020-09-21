@@ -87,7 +87,7 @@ elseif numel(pd)==0
     axis xy
     set(h, 'AlphaData', squeeze(P(:,:,:,1:end-5,:)<opt.PThresh)*.9+.1);
     title(opt.figtitle);
-    set(gca,'xtick',Xticklabels,'xticklabel',Xticklabels,'ytick',Yticks,'yticklabel',Yticklabels,'TickDir','out','linewidth',1.2,'TickLength',[0.03 0.035]);
+    set(gca,'xtick',Xticklabels,'xticklabel',Xticklabels,'ytick',Yticks,'yticklabel',Yticklabels,'TickDir','out','linewidth',1.2,'TickLength',[0.02 0.025]);
     box off;
     if opt.xylabels
         xlabel('Time(S)');
@@ -100,12 +100,13 @@ elseif numel(pd)==0
         colorTitleHandle = get(CB,'Title');
         set(colorTitleHandle ,'String','T-Value');
         set(gca,'position',GCP);
+        set(CB, 'ylim', [0 opt.SThresh])
     end
     set(gca,'fontsize',FS)
     dims = size(P);
     dims = sort(dims(1:2));
     if opt.newfig
-        set(FIG,'unit','inch','position',[1 1 dims(1)*7 dims(2)*2.8],'color','w');
+        set(FIG,'unit','inch','position',[1 1 dims(1)*8 dims(2)*3.5],'color','w');
     end
 %-----------------------PLOT NON AVERAGED RESULTS-------------------------       
 elseif numel(pd)==2

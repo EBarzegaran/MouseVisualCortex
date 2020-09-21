@@ -3,7 +3,7 @@
 addpath(genpath(fileparts(mfilename('fullpath'))));
 addpath(genpath(fileparts(fileparts(mfilename('fullpath')))));
 clear; clc;
-FileName = 'drifting_gratings_75_repeats__contrast0-8_iPDC_Mord15_ff098';
+FileName = 'drifting_gratings_75_repeats__contrast0-1_iPDC_Mord15_ff098';
 Path = '/Users/elhamb/Documents/Data/AllenBrainObserver/preliminary_results/Averaged/Fullmodel/';
 %%
 load(fullfile(Path, ['STOK_ALL_' FileName '.mat']));
@@ -55,7 +55,7 @@ for roi1 = 1:numel(ROIs)
 end
 
 PDC_all = cat(2,PDCFF,PDCFB);
-[Stats,~] = CompPostPre(PDC_all,[1 2],[],1,1,Time,Freq,['High Contrast'],FigPath);
+[Stats,~] = CompPostPre(PDC_all,[1 2],[],1,1,Time,Freq,['Low Contrast'],FigPath);
 
 %% To compare the evoked PDC in different connections intra vs. inter
 

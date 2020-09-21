@@ -637,6 +637,10 @@ export_fig(FIG,fullfile(FigPath,[FileName{1} '_PARAFAC_N' num2str(NComp) '_Frequ
 %% FFT on the temporal loadings
 FIG = figure;
 set(FIG,'unit','inch','color','w','position',[5 5 10 4])
+connames = {'High Contrast','Low Contrast'};
+nb=500;
+FS = 12;
+Frange = 1:100;
 
 for comp = 1:NComp
     for C = 1:2
@@ -644,41 +648,52 @@ for comp = 1:NComp
         for b = 1:nb
             
             P = PARRES{C}.Model_reord{b}{5}(:,comp);
+            %P = detrend(P);
             P_test(b,:) = P./norm(P);
         end
-        Pfft = fft(P_test,[],2);
+        nf = 500;
+        Pfft = fft(P_test,nf,2)/sqrt(size(P_test,2));
         L = 375;
         Fs = 250;
-        f = Fs*(0:(L/2))/L;
+        f = Fs*(0:(nf/2))/nf;
         subplot(2,4,comp+(C-1)*4);hold on;
-        M = mean(abs(Pfft(:,3:100)).^2);
-        plot(f(3:100),M,'linewidth',1.5,'color','k');
+        M = mean(abs(Pfft(:,Frange)).^2);
+        sum(M)
+        plot(log10(f(Frange)),10*log10(M(Frange)),'linewidth',1.5,'color','k');
         %bar(f(3:100),mean(abs(Pfft(:,3:100)).^2));
-        S = std(abs(Pfft(:,3:100)).^2);
-        h = fill([f(3:100) flip(f(3:100))],[M+S flip(M-S)],'k','edgecolor','none');
-        set(h,'facealpha',.5)
+        S = std(abs(Pfft(:,Frange)).^2,[],1)';
+        CI = [(M'+ S) (M' - S)];       
+        
+        % CI
+%         S = std(abs(Pfft(:,Frange)).^2,[],1)./sqrt(size(Pfft,1));
+%         ts = tinv([0.025  0.975],size(Pfft,1)-1);      % T-Score
+%         CI = M(Frange)' + ts.*S';       
+%         
+        h = fill(log10([f(Frange) flip(f(Frange))]),10*log10([CI(Frange,1); flip(CI(Frange,2))]),'k','edgecolor','none');
+        set(h,'facealpha',.5);
         
         YL = ylim;
-        ylim([0 .4])
+        %ylim([0 .15]);
         if C==1
-            title(['Network' num2str(comp)])
+            title(['Network' num2str(comp)]);
         end
-        set(gca,'fontsize',FS)
+        set(gca,'fontsize',FS);
         if comp==1
-            ylabel(connames{C})
+            ylabel(connames{C});
             if C==2
-                xlabel('Frequency(Hz)')
+                xlabel('Frequency(Hz)');
             end
         end
         %
-        xlim([2 20])
+        xlim(log10([1 20]));
+        set(gca,'xtick',log10([1 5 10 20]),'xticklabel',[1 5 10 20])
     end
 end
 
 axes('position',[0.05 ,.5, .1,.1]);
-text(.0,.5,'FFT of Temporal Loading','rotation',90,'HorizontalAlignment','Center','fontsize',FS)
+text(.0,.5,'Power Spectrum of Temporal Loading (dB)','rotation',90,'HorizontalAlignment','Center','fontsize',FS)
 axis off
-export_fig(FIG,fullfile(FigPath,[FileName{1} '_PARAFAC_N' num2str(NComp) '_TemporalFFT']),'-pdf','-r200')
+export_fig(FIG,fullfile(FigPath,[FileName{1} '_PARAFAC_N' num2str(NComp) '_TemporalFFT_loglog']),'-pdf','-r200')
 
 %% RF distance analysis, carefull: keep the connections from the same layer
 
@@ -700,64 +715,7 @@ end
 %(2) log-transform or not?
 %(3) time-freuency plots? then what about layers?
 clc
-nb  =1:500;% number of boots to consider
-VarNames = arrayfun(@(x) ['b' num2str(x)],nb,'uni',false);
-ConNames = arrayfun(@(x) ['C' num2str(x)],1:30,'uni',false);
-
-dists   = reshape(squeeze(mean(PARRES{Cond}.DistanceBoots.RFDists(:,:,:,:),3)),36,500);
-dists   = dists(indTotal,nb);
-%------------------------- reconstruct the data---------------------------
-for cond = 1:2
-    
-    Model_reord =   PARRES{cond}.Model_reord;
-    for t = 150:375
-        t
-        tic
-        for f = 1:80
-            for m = 1:numel(Model_reord)
-                 Data(:,:,m) = Model_reord{m}{1}.*Model_reord{m}{4}(f,:).*Model_reord{m}{5}(t,:);
-            end
-            %----------------------fit regression model--------------------
-            for C = 1:4
-                %(1) Format the data into table
-                Data_table = array2table((squeeze(Data(:,C,nb))),'VariableNames',VarNames);
-                Data_table = [table(ConNames','VariableNames',{'Conn'}) Data_table];
-                Data_table.Conn = categorical(Data_table.Conn);
-                Table_S = stack(Data_table,VarNames,...
-                          'NewDataVariableName','iPDC',...
-                          'IndexVariableName','Boots');
-
-                % Distance data 
-                Dist_table = array2table((squeeze(dists)),'VariableNames',VarNames);
-                Dist_table = [table(ConNames','VariableNames',{'Conn'}) Dist_table];
-                Dist_table.Conn = categorical(Dist_table.Conn);
-                DTable_S = stack(Dist_table,VarNames,...
-                          'NewDataVariableName','Dist',...
-                          'IndexVariableName','Boots');
-
-                TTable = join(Table_S,DTable_S,'keys',{'Conn','Boots'});
-
-                TTable = TTable(~isnan(TTable.iPDC) & ~isnan(TTable.Dist),:);
-                TTable = TTable(~isinf(TTable.iPDC) & ~isinf(TTable.Dist),:);
-
-                %------------(2) Apply mixed-effect model with  random effect on intercept and slope
-                lme_intercept_slope = fitlme(TTable,'iPDC ~ 1 + Dist + (1+Dist|Conn)');
-                lme_slope = fitlme(TTable,'iPDC ~ 1 + Dist +(Dist-1|Conn)');
-                Statres(cond,C,f,t,:,:)=[lme_intercept_slope.Coefficients.Estimate lme_intercept_slope.Coefficients.pValue];
-
-                %[~,~,rEffects] = randomEffects(lme_intercept_slope);
-                %-------------(3) Apply fixed-effect model---------------------------
-                lm = fitlme(TTable,'iPDC ~ 1 + Dist');
-                %--------------------(4) Compare models-----------------------------
-                %Comp(cond,C,f,t,:) =  compare(lm, lme_intercept_slope).pValue;
-
-            end
-        end
-        toc
-    end
-end
-
-
-
+[Statres, rEffects] = Regression_Mixed_dist(PARRES,temp_time,Freq,indTotal);
+% make a figure;
 %export_fig(FIG1,fullfile(FigPath,['PARAFAC_RFDistance_Corr_Overall_poststim_iPDC_evoked']),'-pdf','-r200');
 
