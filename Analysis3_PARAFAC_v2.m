@@ -10,7 +10,8 @@ DataPath = 'Data_Temp';
 
 %Path = 'E:\Elham\Data\AllenBrain\preliminary_results\Averaged\Fullmodel\';
 %% Load the iPDCs for all animals
-Path = '/Users/elhamb/Documents/Data/AllenBrainObserver/preliminary_results/Averaged/Fullmodel/';
+%Path = '/Users/elhamb/Documents/Data/AllenBrainObserver/preliminary_results/Averaged/Fullmodel/';
+Path = 'E:\Elham\Data\AllenBrain\preliminary_results\Averaged\Fullmodel\';
 load(fullfile(Path, ['STOK_ALL_' FileName{1} '.mat']));
 SavePath = Path;
 FigPath = fullfile(Path,'StatResults','PARAFAC');
@@ -715,7 +716,8 @@ end
 %(2) log-transform or not?
 %(3) time-freuency plots? then what about layers?
 clc
-[Statres, rEffects] = Regression_Mixed_dist(PARRES,temp_time,Freq,indTotal);
+[Statres, rEffects, Params] = Regression_Mixed_dist(PARRES,temp_time,Freq,indTotal);
 % make a figure;
 %export_fig(FIG1,fullfile(FigPath,['PARAFAC_RFDistance_Corr_Overall_poststim_iPDC_evoked']),'-pdf','-r200');
 
+save('Temp_res','Statres', 'rEffects', 'Params')
