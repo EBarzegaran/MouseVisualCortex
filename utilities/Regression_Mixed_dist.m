@@ -1,4 +1,15 @@
-function [Statres, rEffects, Params] = Regression_Mixed_dist(PARRES,Time,Freq, indTotal)
+function [Statres, rEffects, Params, Tables] = Regression_Mixed_dist(PARRES,Time,Freq, indTotal,Formula, ConSel, KeepPercent)
+
+% 
+if ~exist('ConSel','var')
+    ConSel = numel(indTotal);
+else
+    indTotal = indTotal(ConSel);
+end
+
+if ~exist('KeepPercent','var')
+    KeepPercent = 1;
+end
 
 nb  =1:numel(PARRES{1,1}.Model_reord);% number of boots to consider
 VarNames = arrayfun(@(x) ['b' num2str(x)],nb,'uni',false);
@@ -16,23 +27,38 @@ for cond = 1:numel(PARRES)
         tic
         for f = 1:numel(Freq)
             for m = 1:numel(Model_reord)
-                Data(:,:,m) = Model_reord{m}{1}.*Model_reord{m}{4}(f,:).*Model_reord{m}{5}(t,:);
-                %Data(:,:,m) = Model_reord{m}{1}.*Model_reord{m}{5}(t,:);
+                if numel(Time)>1
+                    TM = Model_reord{m}{5}(t,:).* mean(Model_reord{m}{2}).*mean(Model_reord{m}{3});
+                else
+                    TM = mean(Model_reord{m}{5}(:,:)).* mean(Model_reord{m}{2}).*mean(Model_reord{m}{3});
+                end
+                
+                if numel(Freq)==1
+                    Data(:,:,m) = Model_reord{m}{1}.*mean(Model_reord{m}{4}(f,:)).*TM;
+                else
+                    Data(:,:,m) = Model_reord{m}{1}.*Model_reord{m}{4}(f,:).*TM;
+                end
+                
             end
             %----------------------fit regression model--------------------
             for C = 1:4
+                % remove 30% of connections with lowest connectivity values
+                Data_temp = (squeeze(Data(ConSel,C,nb)));
+                [~,Ind] = sort(sqrt(sum(Data_temp.^2,2)),'descend');
+                kpInd = Ind(1:round(numel(Ind)*KeepPercent));
+                
                 %(1) Format the data into table
-                Data_table = array2table((squeeze(Data(:,C,nb))),'VariableNames',VarNames);
+                Data_table = array2table((squeeze(Data(ConSel(kpInd),C,nb))),'VariableNames',VarNames);
                 %Data_table = array2table((squeeze(Data_con{cond}(:,C,nb))),'VariableNames',VarNames);
-                Data_table = [table(ConNames','VariableNames',{'Conn'}) Data_table];
+                Data_table = [table(ConNames(kpInd)','VariableNames',{'Conn'}) Data_table];
                 Data_table.Conn = categorical(Data_table.Conn);
                 Table_S = stack(Data_table,VarNames,...
                           'NewDataVariableName','iPDC',...
                           'IndexVariableName','Boots');
 
                 % Distance data 
-                Dist_table = array2table((squeeze(dists)),'VariableNames',VarNames);
-                Dist_table = [table(ConNames','VariableNames',{'Conn'}) Dist_table];
+                Dist_table = array2table((squeeze(dists(kpInd,:))),'VariableNames',VarNames);
+                Dist_table = [table(ConNames(kpInd)','VariableNames',{'Conn'}) Dist_table];
                 Dist_table.Conn = categorical(Dist_table.Conn);
                 DTable_S = stack(Dist_table,VarNames,...
                           'NewDataVariableName','Dist',...
@@ -42,9 +68,11 @@ for cond = 1:numel(PARRES)
 
                 TTable = TTable(~isnan(TTable.iPDC) & ~isnan(TTable.Dist),:);
                 TTable = TTable(~isinf(TTable.iPDC) & ~isinf(TTable.Dist),:);
+                
+                Tables{cond,C}=TTable;
 
                 %------------(2) Apply mixed-effect model with  random effect on intercept and slope
-                lme_intercept_slope = fitlme(TTable,'iPDC ~ 1 + Dist + (1+Dist|Conn)');
+                lme_intercept_slope = fitlme(TTable,Formula);
                 %lme_slope = fitlme(TTable,'iPDC ~ 1 + Dist +(Dist-1|Conn)');
                 %Statres(cond,C,t,:,:)=[lme_intercept_slope.Coefficients.Estimate lme_intercept_slope.Coefficients.pValue];
                 temp = lme_intercept_slope.Coefficients;
@@ -53,11 +81,12 @@ for cond = 1:numel(PARRES)
                 Params.Statres = temp2;
                 
                 % RANDOM EFFECTS
-                [~,~,temp] = lme_intercept_slope.covarianceParameters;
-                temp = temp{1};
-                %[~,~,temp] = randomEffects(lme_intercept_slope);
-                temp2 = dataset2cell(temp);
-                rEffects{cond,C,t,f} =cell2mat(temp2(2:end,5:end));
+%                 [A,B,temp] = lme_intercept_slope.covarianceParameters;
+%                 temp = temp{1};
+%                 temp2 = dataset2cell(temp);
+                [~,~,temp2] = randomEffects(lme_intercept_slope);
+                
+                rEffects{cond,C,t,f} =temp2;%cell2mat(temp2(2:end,5:end));
                 Params.rEffects = temp2;
                 %-------------(3) Apply fixed-effect model---------------------------
                 lm = fitlme(TTable,'iPDC ~ 1 + Dist');

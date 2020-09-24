@@ -721,13 +721,13 @@ end
 %(3) time-freuency plots? then what about layers?
 clc
 FileName = 'PARAFAC_MixedModelRFDIstance_Averaged.mat';
-% F = 1;
-% temp_time = 1;
+F = 1;
+temp_time = 1;
 %Formula = 'iPDC ~ 1 + Dist + (1+Dist|Boots)';
 Formula = 'iPDC ~ 1 + Dist + (1|Boots) + (1|Conn)';
 
 if ~exist(FileName)
-    [Statres, rEffects, Params, Tables] = Regression_Mixed_dist(PARRES,temp_time,F,indTotal,Formula,1:30,.5);
+    [Statres, rEffects, Params, Tables] = Regression_Mixed_dist(PARRES,temp_time,F,indTotal,Formula,1:30,1);
     %save(FileName,'Statres', 'rEffects', 'Params')
     % make a figure;
     %export_fig(FIG1,fullfile(FigPath,['PARAFAC_RFDistance_Corr_Overall_poststim_iPDC_evoked']),'-pdf','-r200');
@@ -736,12 +736,12 @@ else
     %load(FileName)
 end
 
-%%
+%
 Temp = zeros(6);
 Temp(indTotal)=1:numel(indTotal);
 
 FIG = figure;
-for cond = 1:1
+for cond = 1:2
     for C = 1:4
         T = Tables{cond,C};
         RE = rEffects{cond,C};
@@ -765,7 +765,7 @@ for cond = 1:1
         YL = ylim;
         ylim([max(YL(1),0) YL(2)])
         if C>1
-            ylim([0 .01])
+            ylim([0 1])
         end
         %gscatter(T_temp.Dist,T_temp.iPDC,T_temp.Conn,[],'.',10);
         %s = findobj('type','legend')
@@ -773,5 +773,58 @@ for cond = 1:1
     end
 end
 
+%% plot the dots with output color
+T_temp = T;%(T.Conn=='C1'|T.Conn=='C16',:);
+gscatter(T_temp.Dist,T_temp.iPDC,T_temp.Boots,[],'.',10);
+s=findobj('type','legend')
+delete(s)
 
+%%
+Compcol = brewermap(10,'Paired');
+Compcol = Compcol([8 6 10 2],:);
 
+Time = temp_time>-.2;
+FIG = figure;
+set(FIG,'color','w','unit','inch','position',[1 1 5 12])
+for cond = 1:2
+    for C = 1:4
+        subplot(2,1,cond);hold on;
+        S_temp = cellfun(@(x) x(2,1),squeeze(Statres(cond,C,Time,:)))';
+        P_temp = cellfun(@(x) x(2,5),squeeze(Statres(cond,C,Time,:)))';
+        
+        plot(temp_time(Time),S_temp,'color',Compcol(C,:),'linewidth',1.5)
+        %H = imagesc(temp_time(Time),[],S_temp);
+        %colormap(jmaColors('Coolhot'))
+        %set(H,'alphadata',P_temp<0.01*350)
+        %axis xy;
+        %CAX = caxis;
+        %Clim = max(abs(CAX));
+        %caxis([-Clim Clim]);
+        %colorbar;
+        xlim([0 1])
+        ylim([-.04 .045]);
+        hline(0,'k--')
+    end
+end
+export_fig(FIG,fullfile(FigPath,['PARAFAC_RFDistance_Corr_Overall_poststim_iPDC_evoked']),'-pdf','-r200');
+%%
+figure,
+for cond = 1:2
+    for C = 1:4
+        subplot(2,4,C+(cond-1)*4);
+        S_temp = cellfun(@(x) x(3,1),squeeze(rEffects(cond,C,Time,:)))';
+        L_temp = cellfun(@(x) x(3,2),squeeze(rEffects(cond,C,Time,:)))';
+        U_temp = cellfun(@(x) x(3,3),squeeze(rEffects(cond,C,Time,:)))';
+        Sig = sign(L_temp).*sign(U_temp);
+        
+        H = imagesc(temp_time(Time),[],S_temp);
+        colormap(jmaColors('Coolhot'))
+        set(H,'alphadata',Sig==1)
+        axis xy;
+        CAX = caxis;
+        Clim = max(abs(CAX));
+        caxis([-Clim Clim]*1.5);
+        colorbar;
+        xlim([0 1])
+    end
+end
