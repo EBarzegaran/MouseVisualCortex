@@ -1,6 +1,6 @@
 
 clear; clc;
-FileName = 'drifting_gratings_75_repeats__contrast0-1_iPDC_Mord15_ff098';%'_dot_motion__Speed0-01--------0-02--------0-04_iPDC_Mord15';%'drifting_gratings_75_repeats__contrast0-1_iPDC_Mord10';%
+FileName = 'drifting_gratings_75_repeats__contrast0-8_iPDC_Mord15_ff098';%'_dot_motion__Speed0-01--------0-02--------0-04_iPDC_Mord15';%'drifting_gratings_75_repeats__contrast0-1_iPDC_Mord10';%
 Path = '/Users/elhamb/Documents/Data/AllenBrainObserver/preliminary_results/Averaged/Fullmodel/';
 %%
 addpath(genpath(fileparts(fileparts(mfilename('fullpath')))));
@@ -93,25 +93,50 @@ colormap('jet')
 set(FIG1,'unit','inch','position',[1 1 6 3],'color','w')
 export_fig(FIG1,fullfile(SavePath,['STOK_AllROIs' FileName]),'-pdf');
 
-FIG1 = figure;
-imagesc(Time(TimeInd),Freq,squeeze(mean(mean(PDC_avg,1),2)));
-axis xy
-caxis([-10 50])
-colormap('jet')
-set(FIG1,'unit','inch','position',[1 1 7 2.8],'color','w')
-set(gca,'fontsize',FS)
-xlabel('Time(S)')
-ylabel('Frequency(Hz)')
-vline(0,'w-')
-CL = colorbar;
-set(get(CL,'title'),'string','%Change')
-export_fig(FIG1,fullfile(SavePath,['STOK_AverageAll' FileName]),'-pdf');
-
 
 FIG1 = dynet_connplot(PDC_layer_avg,Time(TimeInd),Freq,arrayfun(@(x) ['L' num2str(x)],1:6,'uni',false),[],[],[],1);
 colormap('jet')
 set(FIG1,'unit','inch','position',[1 1 6 3],'color','w')
 export_fig(FIG1,fullfile(SavePath,['STOK_AllLayers' FileName]),'-pdf');
+
+%%
+FIG1 = figure;
+set(FIG1,'unit','inch','position',[1 1 8 5],'color','w')
+axes('position',[.1 .1 .7 .6])
+imagesc(Time(TimeInd),Freq,squeeze(mean(mean(PDC_avg,1),2)));
+axis xy
+caxis([-10 100])
+colormap('jet')
+set(gca,'fontsize',FS)
+vline(0,'w-')
+CL = colorbar;
+set(get(CL,'title'),'string','%Change');
+set(CL,'position',get(CL,'position')+[.2 0 0 0])
+XYpos = get(gca,'position');
+xlabel('Time(S)')
+ylabel('Frequency(Hz)')
+
+% time dist
+axes('position',[.1 .71 .7 .25])
+XLs = (Time(TimeInd));
+PDC_temp = squeeze(mean(mean(mean(PDC_avg,1),2),3));
+FL = fill([XLs flip(XLs)],[PDC_temp; zeros(size(PDC_temp))],'k');
+set(FL,'facealpha',.4)
+axis off;
+set(gca,'xlabel',[],'ylabel',[])
+
+% frequency dist
+axes('position',[.81 .1 .12 .6])
+
+PDC_temp = squeeze(mean(mean(mean(PDC_avg(:,:,:,XLs>.4),1),2),4));
+XLs = 100:-1:1;
+FL = fill([XLs flip(XLs)],[PDC_temp; zeros(size(PDC_temp))],'k');
+set(FL,'facealpha',.4)
+axis off;
+set(gca,'xlabel',[],'ylabel',[])
+view(90,90)
+
+export_fig(FIG1,fullfile(SavePath,['STOK_AverageAll' FileName]),'-pdf');
 
 
 %PDC_avg_diff = PDC_avg - permute(PDC_avg,[2 1 3 4]);

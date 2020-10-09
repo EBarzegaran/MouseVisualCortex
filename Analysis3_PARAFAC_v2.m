@@ -6,6 +6,7 @@ addpath(genpath(fileparts(fileparts(mfilename('fullpath')))));
 addpath(genpath('/Users/elhamb/Documents/Codes/NonGit/nway331'));% add the nway toolbox
 % clear; clc;
 FileName = {'drifting_gratings_75_repeats__contrast0-8_iPDC_Mord15_ff098','drifting_gratings_75_repeats__contrast0-1_iPDC_Mord15_ff098'};
+%FileName = {'dot_motion__Speed0-01--------0-02--------0-04_iPDC_Mord15_ff098','dot_motion__Speed0-0005-------0-001-------0-005_iPDC_Mord15_ff098'};
 DataPath = 'Data_Temp';
 
 %Path = 'E:\Elham\Data\AllenBrain\preliminary_results\Averaged\Fullmodel\';
@@ -454,6 +455,7 @@ for cond = 1:2
 end
 export_fig(FIG,fullfile(FigPath,[FileName{1} '_PARAFAC_N' num2str(NComp) '_Bootstrap_HarrisM']),'-pdf','-r200')
 %% variance explained over time
+addpath(genpath('/Users/elhamb/Documents/Codes/Git/plotting/boxplot2-pkg'))
 close;
 Freq = 1:100;
 con_mode = 1;
@@ -461,61 +463,67 @@ con_mode = 1;
 offs = -.06;
 FS = 12;
 FIG = figure(1);
-set(FIG,'unit','inch','position',[0 0 9 4],'color','w')
+set(FIG,'unit','inch','position',[0 0 5 6],'color','w')
 lstyle = {'-','-'};
 lcolor = {'k',[.5 .5 .5]};
-connames = {'Contrast = 0.8','Contrast = 0.1'};
+connames = {'High Contrast','Low Contrast'};
 Compcol = brewermap(10,'Paired');
 Compcol = Compcol([8 6 10 2],:);
 
-pre_win = find(temp_time<-0.0 & temp_time>-0.5);
+TLabels = {'[-300  0] msec','[50  150] msec','[150  250] msec','[250  1000] msec'};
+NLabels = {'Network1','Network2','Network3','Network4'};
+% Time windows
+TW = [-300 0; 50 150; 150 250; 250 1000];
+
 for cond = 1:2
-    
+    subplot(2,1,cond)
     Model_reord =   PARRES{cond}.Model_reord;
     Comp_ord    =   PARRES{cond}.Comp_ord;
     % temporal dynamics: significance
     M_temp = cellfun(@(x) (x{5}),Model_reord,'uni',false);
     M_temp = cellfun(@(x) ((x)),M_temp,'uni',false);
     M_temp = cat(3,M_temp{:});
-    %M_temp = M_temp-mean(M_temp(pre_win,:,:));
-
-    M_vars = mean(M_temp(:,:,:),3);
-    S_vars = var(M_temp(:,:,:),[],3);
-    subplot(1,2,cond),hold on;
+    % convert to variance explained
     
-    for c = 1:NComp
-         
-        if c==1
-            MData = ((M_vars(:,c)./sum(M_vars,2)))*100-20;
-            
-        else
-           MData = ((M_vars(:,c)./sum(M_vars,2)))*100;
-        end
-        h = fill([temp_time flip(temp_time)],...
-             [MData+S_vars(:,c); flip(MData-S_vars(:,c))],Compcol(c,:),'edgecolor','none');
-             set(h,'facealpha',.5)
-        P(c) = plot(temp_time,MData,'linewidth',1.5,'color',Compcol(c,:));
+    Inds = arrayfun(@(x) find(round(temp_time,2)*1000==x,1),TW);
+    Data = arrayfun(@(x) (mean(M_temp(Inds(x,1):Inds(x,2),:,:).^2)./sum(mean(M_temp(Inds(x,1):Inds(x,2),:,:).^2,1),2))*100,1:size(TW,1),'uni',false);
+    Total = mean(M_temp(:,:,:).^2)./sum(mean(M_temp(:,:,:).^2,1),2)*100;
+    mean(Total,3)
+    std(Total,[],3)
+    Data = cat(1,Data{:});
+    Data(:,1,:)= Data(:,1,:)-40;
+    
+    h = boxplot2(permute(Data,[2 1 3]),1:4);
+    %boxplot(reshape(Data,16,500)')
+    
+    % correct colors
+    for ii = 1:4
+        structfun(@(x) set(x(ii,:), 'color', Compcol(ii,:), ...
+            'markeredgecolor', Compcol(ii,:)), h);
     end
+    set([h.lwhis h.uwhis], 'linestyle', '-','linewidth',1.5);
+    set(h.box, 'linestyle', '-','linewidth',1.5);
+    set(h.out, 'marker', 'none');
     
-    ylim([7 47])
-    vline(0,'k--')
-    hline(25,'k-')
-    set(gca,'ytick',10:5:45,'yticklabel',[10:5:20 45:5:65])
-    if cond ==1
-        LG = legend(P,'SubNet 1','SubNet 2','SubNet 3','SubNet 4');
-        set(LG,'box','off')
-        xlabel('Time (s)')
-        ylabel('Variance Explained %')
-        %set(gca,'position',get(gca,'position')+[0 .04 0 0])
-    end
-    
-    set(gca,'fontsize',FS,'TickDir','out','linewidth',1.2,'TickLength',[0.02 0.035],'XColor',[.2 .2 .2],'YColor',[.2 .2 .2])
-    %set(gca,'position',get(gca,'position')+[-0.04 .0 0 0])
-    box off
-    axis tight;
+    % axis info
     title(connames{cond})
-    xlim([-.2 1])
+    set(gca,'ylim',[0 51]);
+    
+    if cond ==2
+       set(gca,'xtick',1:4,'xticklabel',NLabels,'ytick',0:10:50,'yticklabel',[0 10 60 70 80 90]) 
+       xtickangle(45)
+       ylabel('Variance Explained (%)')
+       
+    else
+        set(gca,'xtick',1:4,'xticklabel',[],'ytick',0:10:50,'yticklabel',[0 10 60 70 80 90]);
+        LG = legend(TLabels);
+        legend box off
+        set(LG,'position',get(LG,'position')+[.05 0 0 0])
+    end
+    hline(19,'k--')
+    set(gca,'fontsize',FS,'TickDir','out','linewidth',1.2,'TickLength',[0.02 0.035],'XColor',[.2 .2 .2],'YColor',[.2 .2 .2])
 end
+    
 export_fig(FIG,fullfile(FigPath,[FileName{1} '_PARAFAC_N' num2str(NComp) '_Bootstrap_Variance']),'-pdf','-r200')
 
 %% define different distribution functions to fit to frequency spectrum
@@ -639,21 +647,77 @@ for comp=1:4
 end
 
 export_fig(FIG,fullfile(FigPath,[FileName{1} '_PARAFAC_N' num2str(NComp) '_FrequencyFit']),'-pdf','-r200')
+%% Overlapping frequency spectrum
+clear model_fun;
+close all;
+
+FIG = figure;
+set(FIG,'unit','inch','position',[5 5 5 7],'color','w')
+FS = 12;
+Colors_cmp = {'r','r','b','b'};
+nb=500;
+Conds = {'High Contrast','Low Contrast'};
+for comp = NComp:-1:1
+    for C = 1:2
+        clear P_test MSE this_p good;
+        for b = 1:nb
+            
+            P_test(b,:) = PARRES{C}.Model_reord{b}{4}(:,comp);
+            
+         
+        end
+
+         % Plot the results
+         subplot(2,1,C)
+         hold on;
+         %
+         M = mean((P_test));
+         Nm = (max(M)-min(M));
+         M = (M-min(M))./Nm;
+         SD = std((P_test))./Nm.^1/2;
+         PL(1)=plot(Freq,M,'k','linewidth',1.5,'color',Colors_cmp{comp});hold on;
+
+         h = fill(([Freq flip(Freq)]),[M+SD flip(M-SD)],Colors_cmp{comp},'edgecolor','none');
+         set(h,'facealpha',.3)
+         
+        %title(Conds{C})
+        
+        box off
+         set(gca,'fontsize',FS,'TickDir','out','linewidth',1.2,'TickLength',[0.02 0.035],'XColor',[.2 .2 .2],'YColor',[.2 .2 .2],...
+             'xtick',0:20:100)
+        if C==2 && comp==1
+            
+            xlabel('Frequency (Hz)')
+            ylabel('Normalized Loading')
+            %set(gca,'position',get(gca,'position')+[0 .04 0 0])
+            
+            %title(['P1=' num2str(Params(1)) ' P2=' num2str(Params(2))])
+        end
+        
+        title(Conds{C})
+     
+    end
+end
+
+
+hold on;
+%export_fig(FIG,fullfile(FigPath,[FileName{1} '_PARAFAC_N' num2str(NComp) '_FrequencyFit']),'-pdf','-r200')
 %% FFT on the temporal loadings
 FIG = figure;
-set(FIG,'unit','inch','color','w','position',[5 5 10 4])
+set(FIG,'unit','inch','color','w','position',[5 5 12 2.5])
 connames = {'High Contrast','Low Contrast'};
 nb=500;
 FS = 12;
 Frange = 1:100;
-
+colorss = [0 0 0; .5 .5 .5];
+clear PL;
 for comp = 1:NComp
     for C = 1:2
         clear P_test MSE this_p good;
         for b = 1:nb
             
             P = PARRES{C}.Model_reord{b}{5}(:,comp);
-            %P = detrend(P);
+            P = detrend(P);
             P_test(b,:) = P./norm(P);
         end
         nf = 500;
@@ -661,10 +725,11 @@ for comp = 1:NComp
         L = 375;
         Fs = 250;
         f = Fs*(0:(nf/2))/nf;
-        subplot(2,4,comp+(C-1)*4);hold on;
+        %subplot(2,4,comp+(C-1)*4);hold on;
+        subplot(1,4,comp);hold on;
         M = mean(abs(Pfft(:,Frange)).^2);
         sum(M)
-        plot(log10(f(Frange)),10*log10(M(Frange)),'linewidth',1.5,'color','k');
+        PL(C) = plot((f(Frange)),(M(Frange)),'linewidth',1.5,'color',colorss(C,:));
         %bar(f(3:100),mean(abs(Pfft(:,3:100)).^2));
         S = std(abs(Pfft(:,Frange)).^2,[],1)';
         CI = [(M'+ S) (M' - S)];       
@@ -674,7 +739,7 @@ for comp = 1:NComp
 %         ts = tinv([0.025  0.975],size(Pfft,1)-1);      % T-Score
 %         CI = M(Frange)' + ts.*S';       
 %         
-        h = fill(log10([f(Frange) flip(f(Frange))]),10*log10([CI(Frange,1); flip(CI(Frange,2))]),'k','edgecolor','none');
+        h = fill(([f(Frange) flip(f(Frange))]),([CI(Frange,1); flip(CI(Frange,2))]),colorss(C,:),'edgecolor','none');
         set(h,'facealpha',.5);
         
         YL = ylim;
@@ -684,19 +749,23 @@ for comp = 1:NComp
         end
         set(gca,'fontsize',FS);
         if comp==1
-            ylabel(connames{C});
+            legend(PL,{'High Contrast','Low Contrast'})
+            legend boxoff
+            %ylabel(connames{C});
             if C==2
                 xlabel('Frequency(Hz)');
             end
         end
         %
-        xlim(log10([1 20]));
-        set(gca,'xtick',log10([1 5 10 20]),'xticklabel',[1 5 10 20])
+        xlim(([1 15]));
+        ylim(([0 .15]));
+        set(gca,'xtick',([1 5 10 15 20]),'xticklabel',[1 5 10 15 20],'TickDir','out','linewidth',1.2,'TickLength',[0.03 0.035],'XColor',[.2 .2 .2],'YColor',[.2 .2 .2])
+        %set(gca,'XAxisLocation','top', 'XTick', []);
     end
 end
 
-axes('position',[0.05 ,.5, .1,.1]);
-text(.0,.5,'Power Spectrum of Temporal Loading (dB)','rotation',90,'HorizontalAlignment','Center','fontsize',FS)
+axes('position',[0.08 ,.5, .1,.1]);
+text(.0,.5,'PSD of Temporal Loading','rotation',90,'HorizontalAlignment','Center','fontsize',FS)
 axis off
 export_fig(FIG,fullfile(FigPath,[FileName{1} '_PARAFAC_N' num2str(NComp) '_TemporalFFT_loglog']),'-pdf','-r200')
 
@@ -720,14 +789,16 @@ end
 %(2) log-transform or not?
 %(3) time-freuency plots? then what about layers?
 clc
-FileName = 'PARAFAC_MixedModelRFDIstance_Averaged.mat';
-% F = 1;
-% temp_time = 1;
+FileName = 'PARAFAC_MixedModelDistance_Averaged.mat';
+ F = 1;
+ temp_time = 1;
+ DODAI =true;
 %Formula = 'iPDC ~ 1 + Dist + (1+Dist|Boots)';
 Formula = 'iPDC ~ 1 + Dist + (1|Boots) + (1|Conn)';
-
+V1FB = 16:20;
+V1FF = 1:5
 if ~exist(FileName)
-    [Statres, rEffects, Params, Tables] = Regression_Mixed_dist(PARRES,temp_time,F,indTotal,Formula,1:30,.5);
+    [Statres, rEffects, Params, Tables] = Regression_Mixed_dist(PARRES,temp_time,F,indTotal,Formula,1:15,.8, false);
     %save(FileName,'Statres', 'rEffects', 'Params')
     % make a figure;
     %export_fig(FIG1,fullfile(FigPath,['PARAFAC_RFDistance_Corr_Overall_poststim_iPDC_evoked']),'-pdf','-r200');
@@ -736,12 +807,16 @@ else
     %load(FileName)
 end
 
-%%
+%
 Temp = zeros(6);
 Temp(indTotal)=1:numel(indTotal);
 
 FIG = figure;
-for cond = 1:1
+set(FIG,'color','w','unit','inch','position',[1 1 13 5])
+FS = 12;
+connames = {'High Contrast','Low Contrast'};
+
+for cond = 1:2
     for C = 1:4
         T = Tables{cond,C};
         RE = rEffects{cond,C};
@@ -755,6 +830,7 @@ for cond = 1:1
         end
 
         subplot(2,4,C+(cond-1)*4); hold on;
+        % scatter plot
        [group, id] = findgroups(T.Conn);
         for I = 1:numel(id)
             Temp2 = char(id(I));
@@ -763,15 +839,46 @@ for cond = 1:1
             scatter((T.Dist(group==I)),(T.iPDC(group==I)),5,'filled','MarkerFaceAlpha',.3,'MarkerFaceColor','b')%Colors(c,:))
         end
         YL = ylim;
-        ylim([max(YL(1),0) YL(2)])
+        %ylim([max(YL(1),0) YL(2)])
         if C>1
-            ylim([0 .01])
+            ylim([0 0.01])
         end
+        YL = ylim;
+        % lines
+        b = Statres{cond,C}(:,1);
+        CIs = Statres{cond,C}(:,6:7);
+        x = 0:60;
+        y = polyval(flip(b),x);
+        LB = polyval([CIs(2,1) CIs(1,1)],x);
+        UB = polyval([CIs(2,2) CIs(1,2)],x);
+        F = fill([x flip(x)],[LB flip(UB)],'r','edgecolor','none');
+        set(F,'facealpha',.2)
+        plot(x,y,'r--','linewidth',2.5);
+        
+        
         %gscatter(T_temp.Dist,T_temp.iPDC,T_temp.Conn,[],'.',10);
         %s = findobj('type','legend')
-        title(['\beta =' num2str(round(Statres{cond,C}(2,1)*1000,3)) ',P=' num2str(round(Statres{cond,C}(2,5),3))])
+        %title(['\beta =' num2str(round(Statres{cond,C}(2,1)*1000,3)) ',P=' num2str(round(Statres{cond,C}(2,5),3))])
+        text(25,YL(2)-(YL(2)-YL(1))*.9,['T_{' num2str(Statres{cond,C}(2,4)) '}= ' num2str(round(Statres{cond,C}(2,3),2)) ', P= ' num2str(round(Statres{cond,C}(2,5),2))],'fontsize',10,'fontweight','bold')
+        set(gca,'fontsize',FS,'TickDir','out','linewidth',1.2,'TickLength',[0.03 0.035],'XColor',[.2 .2 .2],'YColor',[.2 .2 .2])
+        
+        if cond==1
+            title(['Network' num2str(C)]);
+            
+        end
+        if C==1
+            ylabel(connames{cond},'fontweight','bold')
+            if cond==2
+                xlabel('RF distance (deg)','fontweight','bold')
+            end
+        end
     end
 end
 
+axes('position',[.05 .5 .1 .1])
+text(0,0,'iPDC','Rotation',90,'HorizontalAlignment','center','fontsize',FS,'fontweight','bold')
+axis off
 
-
+export_fig(FIG,fullfile(FigPath,[FileName]),'-pdf','-r300')
+set(FIG,'paperposition',[1 1 13 5]);
+print(FIG, '-painters', '-loose', '-dtiff','-r300', fullfile(FigPath,[FileName '.tiff']));
