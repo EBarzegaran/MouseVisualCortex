@@ -38,20 +38,23 @@ IDs = fieldnames(StokALL);
 
 % bootstrap
 ROIsPerID = cellfun(@(x) StokALL.(x).ROIs,IDs,'uni',false);
-nboots = 500;
+nboots = 100;
 bootsize = 8;
 
-redoanalysis = false;
-NComp = 4;
-
+redoanalysis = true;
+NComp = 3;
+%mode = '';% just unfolding over inter-area connectivity
+mode = 'unfoldedlam_';%unfolding over laminar and inter-area connectivity but separately
+% Time windows for variance explained
+TW = [-300 0; 50 150; 150 250; 250 1000];
 for cond = 1:2
-    if redoanalysis || ~exist([FileName{cond} 'PARAFAC_covtemp_' num2str(NComp) '_ExtraVar.mat'],'file')
+    if redoanalysis || ~exist([FileName{cond} ['PARAFAC_covtemp_' mode] num2str(NComp) '_ExtraVar.mat'],'file')
         BootIDs = BootAllROIs(IDs, ROIsPerID, ROIs, nboots, bootsize);
-        PARAFAC_FC(StokALL,NComp,BootIDs,nboots,ROIs,DataPath,FigPath,FileName{cond});    
+        PARAFAC_FC(StokALL,NComp,BootIDs,nboots,ROIs,DataPath,FigPath,FileName{cond},redoanalysis,mode,TW);    
     end
-    load(fullfile(DataPath,[FileName{cond} 'PARAFAC_covtemp_' num2str(NComp)]));
+    load(fullfile(DataPath,[FileName{cond} ['PARAFAC_covtemp_' mode] num2str(NComp)]));
     %DistanceBoots = DistanceForBoot(StokALL,BootIDs);
-    PARRES{cond} = load(fullfile(DataPath,[FileName{cond} 'PARAFAC_covtemp_' num2str(NComp) '_ExtraVar.mat']));
+    PARRES{cond} = load(fullfile(DataPath,[FileName{cond} ['PARAFAC_covtemp_' mode] num2str(NComp) '_ExtraVar.mat']));
     PARRES{cond}.DistanceBoots = DistanceForBoot(StokALL,BootIDs);
 end
 
@@ -495,7 +498,7 @@ for cond = 1:2
     
     h = boxplot2(permute(Data,[2 1 3]),1:4);
     %boxplot(reshape(Data,16,500)')
-    
+    axis tight
     % correct colors
     for ii = 1:4
         structfun(@(x) set(x(ii,:), 'color', Compcol(ii,:), ...
@@ -511,6 +514,7 @@ for cond = 1:2
     
     if cond ==2
        set(gca,'xtick',1:4,'xticklabel',NLabels,'ytick',0:10:50,'yticklabel',[0 10 60 70 80 90]) 
+       set(gca,'position',get(gca,'position')+[0 .05 0 0])
        xtickangle(45)
        ylabel('Variance Explained (%)')
        
@@ -519,6 +523,7 @@ for cond = 1:2
         LG = legend(TLabels);
         legend box off
         set(LG,'position',get(LG,'position')+[.05 0 0 0])
+        LG.ItemTokenSize(1)=15;
     end
     hline(19,'k--')
     set(gca,'fontsize',FS,'TickDir','out','linewidth',1.2,'TickLength',[0.02 0.035],'XColor',[.2 .2 .2],'YColor',[.2 .2 .2])
