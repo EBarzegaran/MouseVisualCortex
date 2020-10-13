@@ -1,7 +1,7 @@
-function PARAFAC_FC(StokALL,NComp,BootIDs,nboots,ROIs,DataPath,FigPath,FileName)
+function PARAFAC_FC(StokALL,NComp,BootIDs,nboots,ROIs,DataPath,FigPath,FileName,redo)
 
 
-if ~exist([FileName 'PARAFAC_covtemp_' num2str(NComp) '.mat'],'file')
+if ~exist([FileName 'PARAFAC_covtemp_' num2str(NComp) '.mat'],'file') || redo
     for b = 1:nboots
             clear Stok_sample;
             % make the sub-sample stok structure
@@ -32,11 +32,23 @@ if ~exist([FileName 'PARAFAC_covtemp_' num2str(NComp) '.mat'],'file')
             indTotal = [indFF indFB];
 
             TW = Time>-0.5 & Time<1;
-            %[ssX,Corco,It] = pftest(5,permute(PDCPulled(:,:,:,TW,:),[4 1 2 3 5]),4,[2 2 2 0 0]);
-            [model_temp,it(b),err(b),corcondia(b)]=parafac(permute((PDCPulled(:,:,:,TW,:)),[4 1 2 3 5]),NComp,[1e-7 10 0 0 NaN],repmat(2,1,5));% dimensions: connections x in x out x freq x time
-    %             PDCP = reshape(PDCPulled(:,:,:,:,:),6*6,size(PDCPulled,3),size(PDCPulled,4),size(PDCPulled,5));
-    %             [model_temp,it(b),err(b),corcondia(b)]=parafac(permute(PDCP(:,:,TW,:),[3 1 2 4]),NComp,[1e-7 10 0 0 NaN],repmat(2,1,NComp));
-            model{b} = model_temp([4 2 3 1]);
+            %-------------------unfolded matrix only in between-areal connectivity dimesions-------------------------
+            % [model_temp,it(b),err(b),corcondia(b)]=parafac(permute((PDCPulled(:,:,:,TW,:)),[4 1 2 3 5]),NComp,[1e-7 10 0 0 NaN],repmat(2,1,5));% dimensions: connections x in x out x freq x time
+            
+            % model{b} = model_temp([5 2 3 4 1]);
+            %-------------------unfold the matrix also in laminar connectivity dimesions-------------------------
+            %%%%%%% NOTE: It does not help to improve corcondia scores%%%%%
+            % PDCP = reshape(PDCPulled(:,:,:,:,:),6*6,size(PDCPulled,3),size(PDCPulled,4),size(PDCPulled,5));
+            % [model_temp,it(b),err(b),corcondia(b)]=parafac(permute((PDCP(:,:,TW,:)),[3 1 2 4]),NComp,[1e-7 10 0 0 NaN],repmat(2,1,5));
+            
+            % model{b} = model_temp([4 2 3 1]);  
+            %-------------------------average or selecting laminar layers-------------------------
+            
+            %-------------------------TUCKER---------------------------
+            % Factors,G,ExplX,Xm]=tucker(permute((PDCP(:,:,TW,:)),[3 1 2 4]),[4 8 3 4],[1e-7 10 0 0 NaN]);
+
+
+            
             temp_time = Time(TW);
     end
     save(fullfile(DataPath,[FileName 'PARAFAC_covtemp_' num2str(NComp)]),'model','NComp','temp_time','BootIDs','nboots','ROIs','IDs','Freq','indTotal','it','err','corcondia')
