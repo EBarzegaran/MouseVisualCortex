@@ -33,9 +33,9 @@ if ~exist([FileName 'PARAFAC_covtemp_' num2str(NComp) '.mat'],'file') || redo
 
             TW = Time>-0.5 & Time<1;
             %-------------------unfolded matrix only in between-areal connectivity dimesions-------------------------
-            % [model_temp,it(b),err(b),corcondia(b)]=parafac(permute((PDCPulled(:,:,:,TW,:)),[4 1 2 3 5]),NComp,[1e-7 10 0 0 NaN],repmat(2,1,5));% dimensions: connections x in x out x freq x time
+             [model_temp,it(b),err(b),corcondia(b)]=parafac(permute((PDCPulled(:,:,:,TW,:)),[4 1 2 3 5]),NComp,[1e-7 10 0 0 NaN],repmat(2,1,5));% dimensions: connections x in x out x freq x time
             
-            % model{b} = model_temp([5 2 3 4 1]);
+             model{b} = model_temp([5 2 3 4 1]);
             %-------------------unfold the matrix also in laminar connectivity dimesions-------------------------
             %%%%%%% NOTE: It does not help to improve corcondia scores%%%%%
             % PDCP = reshape(PDCPulled(:,:,:,:,:),6*6,size(PDCPulled,3),size(PDCPulled,4),size(PDCPulled,5));
