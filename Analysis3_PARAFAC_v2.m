@@ -38,26 +38,28 @@ IDs = fieldnames(StokALL);
 
 % bootstrap
 ROIsPerID = cellfun(@(x) StokALL.(x).ROIs,IDs,'uni',false);
-nboots = 100;
+nboots = 500;
 bootsize = 8;
 
 redoanalysis = true;
-NComp = 3;
-%mode = '';% just unfolding over inter-area connectivity
-mode = 'unfoldedlam_';%unfolding over laminar and inter-area connectivity but separately
+NComp = 4;
+mode = '';% just unfolding over inter-area connectivity
+%mode = 'unfoldedlam_';%unfolding over laminar and inter-area connectivity but separately
 % Time windows for variance explained
 TW = [-300 0; 50 150; 150 250; 250 1000];
 for cond = 1:2
-    if redoanalysis || ~exist([FileName{cond} ['PARAFAC_covtemp_' mode] num2str(NComp) '_ExtraVar.mat'],'file')
+    if redoanalysis || ~exist([FileName{cond} ['PARAFAC_covtemp_' mode 'N_'] num2str(NComp) '_ExtraVar.mat'],'file')
+        load(fullfile(Path, ['STOK_ALL_' FileName{cond} '.mat']));
+        StokALL = DistanceEstimate(StokALL,Probe_all);
+        StokALL = RFDistanceEstimate(StokALL,Probe_all);
         BootIDs = BootAllROIs(IDs, ROIsPerID, ROIs, nboots, bootsize);
         PARAFAC_FC(StokALL,NComp,BootIDs,nboots,ROIs,DataPath,FigPath,FileName{cond},redoanalysis,mode,TW);    
     end
-    load(fullfile(DataPath,[FileName{cond} ['PARAFAC_covtemp_' mode] num2str(NComp)]));
+    load(fullfile(DataPath,[FileName{cond} ['PARAFAC_covtemp_' mode num2str(NComp)]]));
     %DistanceBoots = DistanceForBoot(StokALL,BootIDs);
-    PARRES{cond} = load(fullfile(DataPath,[FileName{cond} ['PARAFAC_covtemp_' mode] num2str(NComp) '_ExtraVar.mat']));
+    PARRES{cond} = load(fullfile(DataPath,[FileName{cond} ['PARAFAC_covtemp_' mode 'N_'] num2str(NComp) '_ExtraVar.mat']));
     PARRES{cond}.DistanceBoots = DistanceForBoot(StokALL,BootIDs);
 end
-
 %% Main figure of all components
 close all;
 Freq = 1:100;
@@ -460,13 +462,14 @@ export_fig(FIG,fullfile(FigPath,[FileName{1} '_PARAFAC_N' num2str(NComp) '_Boots
 %% variance explained over time
 addpath(genpath('/Users/elhamb/Documents/Codes/Git/plotting/boxplot2-pkg'))
 close;
+LogScale = true;%true;
 Freq = 1:100;
 con_mode = 1;
 % plotting params
 offs = -.06;
 FS = 12;
 FIG = figure(1);
-set(FIG,'unit','inch','position',[0 0 5 6],'color','w')
+set(FIG,'unit','inch','position',[0 0 5 6.5],'color','w')
 lstyle = {'-','-'};
 lcolor = {'k',[.5 .5 .5]};
 connames = {'High Contrast','Low Contrast'};
@@ -476,7 +479,7 @@ Compcol = Compcol([8 6 10 2],:);
 TLabels = {'[-300  0] msec','[50  150] msec','[150  250] msec','[250  1000] msec'};
 NLabels = {'Network1','Network2','Network3','Network4'};
 % Time windows
-TW = [-300 0; 50 150; 150 250; 250 1000];
+TW = [-300 0; 50 150; 150 250; 250 1000; -300 1000];
 
 for cond = 1:2
     subplot(2,1,cond)
@@ -494,12 +497,19 @@ for cond = 1:2
     mean(Total,3)
     std(Total,[],3)
     Data = cat(1,Data{:});
-    Data(:,1,:)= Data(:,1,:)-40;
     
-    h = boxplot2(permute(Data,[2 1 3]),1:4);
+    %----------The boxplot-----------------
+    if ~LogScale
+        Data(:,1,:)= Data(:,1,:)-38;
+        h = boxplot2(permute(Data(1:4,:,:),[2 1 3]),1:4);
+    else
+        h = boxplot2(permute(log10(Data(1:4,:,:)),[2 1 3]),1:4);
+    end
+    
+    
     %boxplot(reshape(Data,16,500)')
     axis tight
-    % correct colors
+    %--------------- correct colors------------
     for ii = 1:4
         structfun(@(x) set(x(ii,:), 'color', Compcol(ii,:), ...
             'markeredgecolor', Compcol(ii,:)), h);
@@ -510,26 +520,38 @@ for cond = 1:2
     
     % axis info
     title(connames{cond})
-    set(gca,'ylim',[0 51]);
+    %----------Y axis---------------
     
+    set(gca,'xtick',1:4,'xticklabel',NLabels)
+   if ~LogScale
+        set(gca,'ytick',[0 10 21:10:51],'yticklabel',[0 10 60 70 80 90],'ylim',[0 61]) ;
+   else
+        set(gca,'ytick',log10([2.5 5 10 20 40 80]),'yticklabel',[2.5 5 10 20 40 80],'ylim',[log10(.8) log10(100)]) ;
+   end
+   %-----------other axis--------------    
     if cond ==2
-       set(gca,'xtick',1:4,'xticklabel',NLabels,'ytick',0:10:50,'yticklabel',[0 10 60 70 80 90]) 
        set(gca,'position',get(gca,'position')+[0 .05 0 0])
        xtickangle(45)
        ylabel('Variance Explained (%)')
        
     else
-        set(gca,'xtick',1:4,'xticklabel',[],'ytick',0:10:50,'yticklabel',[0 10 60 70 80 90]);
+        set(gca,'xticklabel',[])
         LG = legend(TLabels);
         legend box off
         set(LG,'position',get(LG,'position')+[.05 0 0 0])
         LG.ItemTokenSize(1)=15;
     end
-    hline(19,'k--')
+    if ~LogScale
+        %hline(18,'k--')
+        hline(21,'k-')
+    end
     set(gca,'fontsize',FS,'TickDir','out','linewidth',1.2,'TickLength',[0.02 0.035],'XColor',[.2 .2 .2],'YColor',[.2 .2 .2])
 end
-    
-export_fig(FIG,fullfile(FigPath,[FileName{1} '_PARAFAC_N' num2str(NComp) '_Bootstrap_Variance']),'-pdf','-r200')
+if ~LogScale
+    export_fig(FIG,fullfile(FigPath,[FileName{1} '_PARAFAC_N' num2str(NComp) '_Bootstrap_Variance']),'-pdf','-r200')
+else
+    export_fig(FIG,fullfile(FigPath,[FileName{1} '_PARAFAC_N' num2str(NComp) '_Bootstrap_Variance_LogScale']),'-pdf','-r200')
+end
 
 %% define different distribution functions to fit to frequency spectrum
 clear model_fun;

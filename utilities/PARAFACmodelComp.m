@@ -1,4 +1,4 @@
-function [ord2,sscore,Corrs,model2,CorrPvals,Corrvals_out] = PARAFACmodelComp(model1,model2,modes)
+function [ord2,sscore,Corrs,model2,CorrPvals,Corrvals_out,Corr_intercomp] = PARAFACmodelComp(model1,model2,modes)
 
 if ~exist('modes','var')
     modes = 1:numel(model1);
@@ -29,6 +29,8 @@ sscore = mean(cellfun(@(x) mean(diag(x(:,ord2))),Corrvals));
 Corrs = diag(mean(cat(3,Corrvals{:}),3));
 CorrPvals = cellfun(@diag,CorrPvals,'uni',false); CorrPvals = cat(2,CorrPvals{:});% comp x mode
 
+
+Corr_intercomp = sum(sum(tril(abs(Corrvals_out(ord2,ord2)),-1)))/((size(Corrvals_out,1).*(size(Corrvals_out,1)-1))/2);
 
 end
 

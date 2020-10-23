@@ -1,7 +1,7 @@
 function PARAFAC_FC(StokALL,NComp,BootIDs,nboots,ROIs,DataPath,FigPath,FileName,redo,mode,TW_var)
 
 IDs = fieldnames(StokALL);
-if ~exist([FileName ['PARAFAC_covtemp_' mode] num2str(NComp) '.mat'],'file') || redo
+if ~exist([FileName ['PARAFAC_covtemp_' mode] num2str(NComp) '.mat'],'file') %|| redo
     for b = 1:nboots
             clear Stok_sample;
             % make the sub-sample stok structure
@@ -35,46 +35,27 @@ if ~exist([FileName ['PARAFAC_covtemp_' mode] num2str(NComp) '.mat'],'file') || 
             temp_time = Time(TW);
             Inds_tvar = arrayfun(@(x) find(round(temp_time,2)*1000==x,1),TW_var);
             %-------------------unfolded matrix only in between-areal connectivity dimesions-------------------------
-            % [model_temp,it(b),err(b),corcondia(b)]=parafac(permute((PDCPulled(:,:,:,TW,:)),[4 1 2 3 5]),NComp,[1e-7 10 0 0 NaN],repmat(2,1,5));% dimensions: connections x in x out x freq x time
-            % model{b} = model_temp([5 2 3 4 1]);
-            
+            if strcmp(mode,'')
+                [model_temp,it(b),err(b),corcondia(b), SSX(b),X]=parafac(permute((PDCPulled(:,:,:,TW,:)),[4 1 2 3 5]),NComp,[1e-7 2 0 0 10],repmat(2,1,5));% dimensions: connections x in x out x freq x time
+                 model{b} = model_temp([5 2 3 4 1]);
+            end
             %-------------------unfold the matrix also in laminar connectivity dimesions-------------------------
             %%%%%%% NOTE: It does help to improve corcondia scores up to 3 components%%%%%
-            PDCP = reshape(PDCPulled(:,:,:,:,:),6*6,size(PDCPulled,3),size(PDCPulled,4),size(PDCPulled,5));
-            [model_temp,it(b),err(b),corcondia(b), SSX(b),X]=parafac(permute((PDCP(:,:,TW,:)),[3 1 2 4]),NComp,[1e-7 2 0 0 10],repmat(2,1,5));
-            Data = Loading2Data(model_temp);
-            X = reshape(X,size(Data{1}));
-            % add variance over time windows
-            for c=1:NComp
-%                  DD = Data(c);
-%                  model1 =sum(cat(6,DD{:}),6);
-%                  Var(c)=sum(model1(:).^2);
-                 
-                 DD = Data(setdiff(1:NComp,c));
-                 model1 =sum(cat(6,DD{:}),6);
-                 err2 = sum((X(:)-model1(:)).^2);
-                 Var2(c) = err2/SSX(b)*100;
-                 for t = 1:size(TW_var,1)
-                     
-                     X2 = X(Inds_tvar(t,1):Inds_tvar(t,2),:,:,:);
-                     model2 = model1(Inds_tvar(t,1):Inds_tvar(t,2),:,:,:);
-                     err2 = sum((X2(:)-model2(:)).^2);
-                    VarT(c,t) = err2/sum(X2(:).^2)*100;
-                 end
+            if strcmpi(mode,'unfoldedlam')
+                PDCP = reshape(PDCPulled(:,:,:,:,:),6*6,size(PDCPulled,3),size(PDCPulled,4),size(PDCPulled,5));
+                [model_temp,it(b),err(b),corcondia(b), SSX(b),X]=parafac(permute((PDCP(:,:,TW,:)),[3 1 2 4]),NComp,[1e-7 2 0 0 10],repmat(2,1,5));
+
+                model{b} = model_temp([4 2 3 1]);  
             end
-            %Varexp{b} = Var/(sum(Var))*(1-err(b)/SSX(b))*100;
-            Varexp2{b} = Var2;
-            Varexp_time{b} = VarT;
-            
-            model{b} = model_temp([4 2 3 1]);  
-            
             %-------------------unfold the matrix in laminar abd between-areal connectivity dimesions-------------------------
             %%%%%%% NOTE: This is not a good idea, it does not account for uniform laminar connectivity between areas%%%%%
-            % PDCP = reshape(PDCPulled(:,:,:,:,:),6*6,size(PDCPulled,3),size(PDCPulled,4),size(PDCPulled,5));
-            %  dims= size(PDCP);
-            %  PDCP = reshape(permute(PDCP,[1 4 2 3]),dims(1)*dims(4),dims(2),dims(3));
-            % [model_temp,it(b),err(b),corcondia(b)]=parafac(permute((PDCP),[3 1 2]),3,[1e-7 10 0 0 10],repmat(2,1,5));
-            % model{b} = model_temp([4 2 3 1]); 
+            if strcmpi(mode,'unfoldedall')
+                PDCP = reshape(PDCPulled(:,:,:,:,:),6*6,size(PDCPulled,3),size(PDCPulled,4),size(PDCPulled,5));
+                dims= size(PDCP);
+                PDCP = reshape(permute(PDCP,[1 4 2 3]),dims(1)*dims(4),dims(2),dims(3));
+                [model_temp,it(b),err(b),corcondia(b), SSX(b),X]=parafac(permute((PDCP),[3 1 2]),NComp,[1e-7 2 0 0 10],repmat(2,1,5));
+                model{b} = model_temp([2 3 1]); 
+            end
             
             %-------------------------average or selecting laminar layers-------------------------
             % [model_temp_l2,it_l2,err_l2,corcondia_l2]=parafac(squeeze(permute((PDCPulled(2,2,:,TW,:)),[4 1 2 3 5])),2,[1e-7 10 0 0 10],repmat(2,1,5));% dimensions: connections x in x out x freq x time
@@ -82,7 +63,36 @@ if ~exist([FileName ['PARAFAC_covtemp_' mode] num2str(NComp) '.mat'],'file') || 
             %-------------------------TUCKER---------------------------
             % Factors,G,ExplX,Xm]=tucker(permute((PDCP(:,:,TW,:)),[3 1 2 4]),[4 8 3 4],[1e-7 10 0 0 NaN]);
 
+            %--------------------VARIANCE EXPLAINED-----------------------
+            Data = Loading2Data(model_temp);
+                X = reshape(X,size(Data{1}));
+                % add variance over time windows
+                if NComp>1
+                for c=1:NComp
+    %                  DD = Data(c);
+    %                  model1 =sum(cat(6,DD{:}),6);
+    %                  Var(c)=sum(model1(:).^2);
+                     
+                     DD = Data(setdiff(1:NComp,c));
+                     model1 =sum(cat(6,DD{:}),6);
+                     err2 = sum((X(:)-model1(:)).^2);
+                     Var2(c) = err2/SSX(b)*100;
+                     for t = 1:size(TW_var,1)
 
+                         X2 = X(Inds_tvar(t,1):Inds_tvar(t,2),:,:,:);
+                         model2 = model1(Inds_tvar(t,1):Inds_tvar(t,2),:,:,:);
+                         err2 = sum((X2(:)-model2(:)).^2);
+                        VarT(c,t) = err2/sum(X2(:).^2)*100;
+                     end
+                end
+                %Varexp{b} = Var/(sum(Var))*(1-err(b)/SSX(b))*100;
+                Varexp2{b} = Var2;
+                Varexp_time{b} = VarT;
+                else
+                    Varexp2{b} = 1-err/SSX;
+                    Varexp_time{b} = [];
+                end
+                %----------------------------------------------------------
             
             temp_time = Time(TW);
     end
@@ -94,11 +104,11 @@ end
 % for example here I calculate correlation for the first mode : this does
 % not work
 % We have different modes of data ...
-if ~exist([FileName ['PARAFAC_covtemp_' mode] num2str(NComp) '_ExtraVar.mat'],'file')
+if ~exist([FileName ['PARAFAC_covtemp_' mode 'N_'] num2str(NComp) '_ExtraVar.mat'],'file')|| redo
     for i = 1:nboots
         i
         for j = 1:nboots
-            [maps(i,j,:),sscore(i,j),Corrs(i,j,:),~,CorrPvals(i,j,:,:),Corrvals(i,j,:,:)] = PARAFACmodelComp(model{i},model{j});
+            [maps(i,j,:),sscore(i,j),Corrs(i,j,:),~,CorrPvals(i,j,:,:),Corrvals(i,j,:,:), Corr_interC(i,j)] = PARAFACmodelComp(model{i},model{j});
         end
     end
 
@@ -110,7 +120,7 @@ if ~exist([FileName ['PARAFAC_covtemp_' mode] num2str(NComp) '_ExtraVar.mat'],'f
         [~,sscore_reord(i),Corrs_reord(i,:),Model_reord{i}] = PARAFACmodelComp(model{RefInd},model{i});
     end
 else
-    load([FileName ['PARAFAC_covtemp_' mode] num2str(NComp) '_ExtraVar.mat']);
+    load([FileName ['PARAFAC_covtemp_' mode 'N_'] num2str(NComp) '_ExtraVar.mat']);
 end
 %% how much of variance are explained by each component
 %[1 4 3 2 5];
